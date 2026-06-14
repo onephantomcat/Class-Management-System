@@ -1,0 +1,25 @@
+{
+  "name": "class-management-system",
+  "version": "1.0.0",
+  "description": "高校班级事务管理系统",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "eslint": "^8.57.1",
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.17.0",
+    "element-plus": "^2.14.2",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.38",
+    "vue-router": "^4.6.4"
+  }
+}
