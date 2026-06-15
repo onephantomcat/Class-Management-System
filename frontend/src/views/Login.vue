@@ -56,7 +56,7 @@
         <h4 style="color: #409EFF; border-bottom: 1px solid #EBEEF5; padding-bottom: 5px;">一、 角色与权限体系</h4>
         <ul style="line-height: 1.8; margin-bottom: 15px; color: #606266; font-size: 14px;">
           <li><el-tag size="small" type="danger">班主任 (Role 1)</el-tag> <strong>最高管理权限</strong>。可纵览全班成绩、考勤大盘，具备管理全员系统账号的权限。负责对“综合评优”项目进行终审和授予等级。</li>
-          <li><el-tag size="small" type="warning">班长/团支书 (Role 2)</el-tag> <strong>核心管理权限</strong>。负责班费流水审核与记录、日常任务派发、学生请假初审，以及发起班级大型活动。</li>
+          <li><el-tag size="small" type="warning">班长 (Role 2)</el-tag> <strong>核心管理权限</strong>。负责班费流水审核与记录、日常任务派发、学生请假初审，以及发起班级大型活动。</li>
           <li><el-tag size="small" type="primary">职能班委 (Role 3)</el-tag> <strong>水平权限隔离</strong>。系统根据其具体 <code>jobId</code> 解锁对应的专项工作台。例如：<strong>学习委员</strong>可动态录入全班成绩；<strong>纪律委员</strong>可录入违纪情况并查看全班考勤大盘；<strong>文体委员</strong>可在【触发控制台】内统筹班级文娱比赛等各类活动申请及审批。</li>
           <li><el-tag size="small" type="info">普通同学 (Role 4)</el-tag> <strong>个人数据访问权</strong>。只能访问属于自己的独立档案库（个人成绩、缴费账单、个人纪律档案），可随时发起请假申请、参与评优与班级活动报名。</li>
         </ul>
