@@ -41,7 +41,7 @@ const routes = [
       {
         path: 'views/student-payments',
         component: () => import('@/views/StudentPaymentView.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '我的缴费账单' }
+        meta: { roles: [1, 2, 3], requiredJob: '财务', title: '班级缴费大盘' }
       },
       {
         path: 'views/student-academics',
@@ -59,6 +59,11 @@ const routes = [
         meta: { roles: [1, 2, 3], requiredJob: '纪律', title: '班级考勤大盘' }
       },
       {
+        path: 'views/class-schedule',
+        component: () => import('@/views/ClassScheduleView.vue'),
+        meta: { roles: [1, 2, 3, 4], title: '班级学期课表' }
+      },
+      {
         path: 'views/activity-registration-stats',
         component: () => import('@/views/ActivityRegistrationStatsView.vue'),
         meta: { roles: [1, 2, 3], title: '班级活动大盘' }
@@ -66,17 +71,12 @@ const routes = [
       {
         path: 'views/class-grades',
         component: () => import('@/views/ClassGradesView.vue'),
-        meta: { roles: [1, 2], title: '班级成绩大盘' }
+        meta: { roles: [1, 2, 3], requiredJob: '学习', title: '班级成绩大盘' }
       },
       {
         path: 'views/pending-approvals',
         component: () => import('@/views/PendingApprovalView.vue'),
         meta: { roles: [1, 2], title: '全局待办审批' }
-      },
-      {
-        path: 'views/pending-class-fees',
-        component: () => import('@/views/PendingClassFeeView.vue'),
-        meta: { roles: [1, 2, 3], title: '班费欠缴明细' }
       },
       {
         path: 'views/user-roles',
@@ -100,7 +100,7 @@ const routes = [
       {
         path: 'class-fees/dashboard',
         component: () => import('@/views/class-fees/ClassFeeDashboard.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '班费大盘' }
+        meta: { roles: [1, 2, 3, 4], title: '班费账单中心' }
       },
       {
         path: 'triggers/score-entry',
@@ -186,8 +186,13 @@ router.beforeEach((to, from, next) => {
 
     // b) 如果是角色 3 (职能班委)，额外做精细化岗位校验
     if (userRole === 3 && to.meta.requiredJob) {
-      if (!userStore.jobId || !userStore.jobId.includes(to.meta.requiredJob)) {
-        return next('/403');
+      if (Array.isArray(to.meta.requiredJob)) {
+        const hasJob = to.meta.requiredJob.some(job => userStore.jobId && userStore.jobId.includes(job));
+        if (!hasJob) return next('/403');
+      } else {
+        if (!userStore.jobId || !userStore.jobId.includes(to.meta.requiredJob)) {
+          return next('/403');
+        }
       }
     }
   }

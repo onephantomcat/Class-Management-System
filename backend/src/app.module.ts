@@ -32,6 +32,7 @@ import { UsersModule } from './users/users.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { ClassFeesModule } from './class-fees/class-fees.module';
+import { CoursesModule } from './courses/courses.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ClassFeesModule } from './class-fees/class-fees.module';
     TasksModule,
     ApprovalsModule,
     ClassFeesModule,
+    CoursesModule,
     TypeOrmModule.forFeature([
       UserRolesView,
       PendingApprovalView,

@@ -45,10 +45,16 @@ export class ViewsService {
 
     let whereCondition: any = {};
     if (keyword && searchFields.length > 0) {
-      whereCondition = searchFields.map(field => ({
-        [field]: Like(`%${keyword}%`)
-      }));
+      whereCondition = searchFields.map(field => {
+        const cond: any = { [field]: Like(`%${keyword}%`) };
+        if (query.studentId) cond.studentId = query.studentId;
+        return cond;
+      });
+    } else if (query.studentId) {
+      whereCondition = { studentId: query.studentId };
     }
+
+    console.log('[DEBUG] Query:', query, 'Where:', whereCondition);
 
     const [list, total] = await repo.findAndCount({
       where: Object.keys(whereCondition).length > 0 ? whereCondition : undefined,

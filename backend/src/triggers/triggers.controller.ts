@@ -58,4 +58,10 @@ export class TriggersController {
     await this.triggersService.applyAward(body);
     return { code: 200, message: '评优申请提交成功，触发器已通过所有资格校验！' };
   }
+
+  @Post('activities')
+  async createActivity(@Body() body: any) {
+    await this.triggersService.createActivity(body);
+    return { code: 200, message: '活动创建成功，已提交至审批大厅！' };
+  }
 }

@@ -116,4 +116,24 @@ export class TriggersService {
       [approveId, data.awardId, data.studentId, data.material || '无']
     );
   }
+
+  // 10. 活动模块：发布新活动
+  async createActivity(data: any): Promise<void> {
+    const approveId = `APP_ACT_${Date.now()}`;
+    const activityId = `ACT_${Date.now()}`;
+
+    // 1. 生成审批单
+    await this.entityManager.query(
+      `INSERT INTO 审批流程总表 (审批编号, 审批类型, 申请人学工号, 申请人姓名, 申请内容, 申请时间, 当前审批节点, 审批状态) 
+       VALUES (?, ?, ?, ?, ?, NOW(), '班长初审', '待审批')`,
+      [approveId, '活动申请', data.studentId, data.studentName || '系统用户', `申请发布活动:${data.activityName}`]
+    );
+
+    // 2. 插入活动表
+    await this.entityManager.query(
+      `INSERT INTO 班级活动申请表 (活动编号, 审批编号, 活动名称, 活动类型, 活动时间, 活动地点, 人数限制, 经费预算, 负责人学号) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [activityId, approveId, data.activityName, data.activityType || '常规活动', data.activityDate ? new Date(data.activityDate) : new Date(), data.location || '待定', data.limitCount || 0, data.budget || 0.00, data.studentId]
+    );
+  }
 }

@@ -13,6 +13,11 @@ export class PaginationQueryDto {
    * 搜索关键字
    */
   keyword?: string;
+
+  /**
+   * 学工号（用于精确过滤当前学生数据）
+   */
+  studentId?: string;
 }
 
 /**

@@ -22,9 +22,10 @@
         <el-sub-menu index="4">
           <template #title><el-icon><Histogram /></el-icon><span>全景数据档案室</span></template>
           <!-- 全员可见 (但班主任没有个人作业和缴费，因此屏蔽) -->
-          <el-menu-item v-if="roleCode !== 1" index="/views/student-payments">我的缴费账单</el-menu-item>
           <el-menu-item v-if="roleCode !== 1" index="/views/student-academics">个人学业大盘</el-menu-item>
           <el-menu-item v-if="roleCode !== 1" index="/views/student-disciplines">个人纪律档案</el-menu-item>
+          
+          <el-menu-item index="/views/class-schedule">班级学期课表</el-menu-item>
 
           <!-- 班委及以上可见 (Role 1, 2, 3)，进一步做水平权限隔离 -->
           <el-menu-item 
@@ -33,11 +34,11 @@
           >
             班级考勤大盘
           </el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || roleCode === 3" index="/views/activity-registration-stats">班级活动大盘</el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || roleCode === 3" index="/views/pending-class-fees">班费欠缴明细</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('文体'))" index="/views/activity-registration-stats">班级活动大盘</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('财务'))" index="/views/student-payments">班级缴费大盘</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('学习'))" index="/views/class-grades">班级成绩大盘</el-menu-item>
 
           <!-- 班主任/班长可见 (Role 1, 2) -->
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/class-grades">班级成绩大盘</el-menu-item>
           <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/pending-approvals">全局待办审批</el-menu-item>
           <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/user-roles">角色权限清单</el-menu-item>
         </el-sub-menu>
@@ -58,7 +59,7 @@
           
           <el-menu-item index="/tasks/center">日常任务大厅</el-menu-item>
           <el-menu-item index="/approvals/center">审批大厅</el-menu-item>
-          <el-menu-item index="/class-fees/dashboard">班费资金管理</el-menu-item>
+          <el-menu-item index="/class-fees/dashboard">班费账单中心</el-menu-item>
 
           <!-- 只有1,2 或者 jobId包含'学习'的3才能录入成绩 -->
           <el-menu-item 

@@ -37,6 +37,35 @@ export class ApprovalsService {
     return { success: true, approvalId };
   }
 
+  // 1.5 发起成绩修改申请
+  async createGradeModificationRequest(data: any) {
+    const approvalId = `APP_${Date.now()}`;
+    
+    // 获取申请人姓名
+    const [users] = await this.entityManager.query(`SELECT 姓名 FROM 用户账号与权限信息表 WHERE 学工号 = ?`, [data.applicantId]);
+    const name = users ? users.姓名 : '未知';
+
+    // 申请内容打包为 JSON，包含新旧成绩等
+    const contentPayload = JSON.stringify({
+      gradeId: data.gradeId,
+      courseName: data.courseName,
+      studentName: data.studentName,
+      oldScore: data.oldScore,
+      newScore: data.newScore,
+      reason: data.reason
+    });
+
+    // 成绩修改直接流转给班主任终审
+    await this.entityManager.query(
+      `INSERT INTO 审批流程总表 
+        (审批编号, 审批类型, 申请人学工号, 申请人姓名, 申请内容, 当前审批节点, 审批状态)
+       VALUES (?, '成绩修改申请', ?, ?, ?, '班主任终审', '待审批')`,
+      [approvalId, data.applicantId, name, contentPayload]
+    );
+
+    return { success: true, approvalId };
+  }
+
   // 2. 获取我的申请
   async getMyRequests(userId: string) {
     return this.entityManager.query(
@@ -100,6 +129,21 @@ export class ApprovalsService {
        WHERE 审批编号 = ?`,
       [nextNode, nextStatus, auditorId, comment, finishTime, approvalId]
     );
+
+    // 如果是成绩修改申请且已通过，执行更新学业成绩明细表
+    if (approval.审批类型 === '成绩修改申请' && nextStatus === '已通过') {
+      try {
+        const payload = JSON.parse(approval.申请内容);
+        if (payload && payload.gradeId && payload.newScore !== undefined) {
+          await this.entityManager.query(
+            `UPDATE 学业成绩明细表 SET 总评成绩 = ?, 审核状态 = '已复核' WHERE 成绩编号 = ?`,
+            [payload.newScore, payload.gradeId]
+          );
+        }
+      } catch (e) {
+        console.error('解析成绩修改申请内容失败', e);
+      }
+    }
 
     return { success: true };
   }

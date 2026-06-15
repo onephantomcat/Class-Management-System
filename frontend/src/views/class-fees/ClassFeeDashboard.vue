@@ -25,15 +25,15 @@
           <div class="actions">
             <!-- 仅班长/生活委员(Role 2) 可发起收款 -->
             <el-button v-if="userStore.roleCode === 2" type="primary" :icon="Plus" @click="openIncomeModal">发起收款</el-button>
-            <!-- 所有人皆可申请报销 -->
-            <el-button type="success" :icon="Plus" @click="openExpenseModal">申请报销</el-button>
+            <!-- 仅班长和财务委员可以申请报销 -->
+            <el-button v-if="userStore.roleCode === 2 || (userStore.roleCode === 3 && userStore.jobId.includes('财务'))" type="success" :icon="Plus" @click="openExpenseModal">申请报销</el-button>
           </div>
         </div>
       </template>
 
       <el-tabs v-model="activeTab" @tab-change="fetchData">
-        <!-- 账单中心：当前学生需要缴纳的费用 -->
-        <el-tab-pane label="我的缴费账单" name="bills">
+        <!-- 账单中心：当前学生需要缴纳的费用 (班主任不可见) -->
+        <el-tab-pane v-if="userStore.roleCode !== 1" label="我的缴费账单" name="bills">
           <el-table :data="myBills" v-loading="loading" border stripe>
             <el-table-column prop="收入类型" label="收费项目" width="150" />
             <el-table-column prop="备注" label="说明" min-width="200" />
@@ -63,8 +63,8 @@
           </el-table>
         </el-tab-pane>
 
-        <!-- 报销中心：我提交的报销 -->
-        <el-tab-pane label="我提交的报销" name="my-expenses">
+        <!-- 报销中心：我提交的报销 (仅班长和财务委员可见) -->
+        <el-tab-pane v-if="userStore.roleCode === 2 || (userStore.roleCode === 3 && userStore.jobId.includes('财务'))" label="我提交的报销" name="my-expenses">
           <el-table :data="myExpenses" v-loading="loading" border stripe>
             <el-table-column prop="支出事由" label="报销事由" min-width="200" />
             <el-table-column prop="支出金额" label="报销金额 (元)" width="120" />
@@ -82,8 +82,8 @@
           </el-table>
         </el-tab-pane>
 
-        <!-- 财务审批：班长/班主任 可见 -->
-        <el-tab-pane label="财务报销审批" name="audits" v-if="userStore.roleCode === 1 || userStore.roleCode === 2">
+        <!-- 财务审批：最后流转到班主任审核 -->
+        <el-tab-pane label="财务报销审批" name="audits" v-if="userStore.roleCode === 1">
           <el-table :data="allExpenses" v-loading="loading" border stripe>
             <el-table-column prop="申请人姓名" label="申请人" width="100" />
             <el-table-column prop="支出事由" label="报销事由" min-width="200" />
@@ -158,7 +158,7 @@ import { useUserStore } from '@/store/user';
 import dayjs from 'dayjs';
 
 const userStore = useUserStore();
-const activeTab = ref('bills');
+const activeTab = ref(userStore.roleCode === 1 ? 'audits' : 'bills');
 const loading = ref(false);
 
 const balance = ref({});

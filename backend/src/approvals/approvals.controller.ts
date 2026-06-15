@@ -10,6 +10,11 @@ export class ApprovalsController {
     return this.approvalsService.createLeaveRequest(data);
   }
 
+  @Post('grade-modification')
+  async createGradeModificationRequest(@Body() data: any) {
+    return this.approvalsService.createGradeModificationRequest(data);
+  }
+
   @Get('my-requests')
   async getMyRequests(@Query('userId') userId: string) {
     return this.approvalsService.getMyRequests(userId);

@@ -66,10 +66,18 @@ const loading = ref(false);
 const tableData = ref([]);
 const total = ref(0);
 
+import { useUserStore } from '@/store/user';
+const userStore = useUserStore();
+
+const canSeeAllAcademics = userStore.roleCode === 1 || 
+                           userStore.roleCode === 2 || 
+                           (userStore.roleCode === 3 && (userStore.jobId.includes('学习') || userStore.jobId.includes('纪律')));
+
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  keyword: ''
+  keyword: '',
+  studentId: canSeeAllAcademics ? undefined : userStore.studentId
 });
 
 const fetchData = async () => {

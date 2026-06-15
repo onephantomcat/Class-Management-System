@@ -32,7 +32,19 @@ import { getStudentDisciplines } from '@/api/views';
 const loading = ref(false);
 const tableData = ref([]);
 const total = ref(0);
-const queryParams = reactive({ page: 1, pageSize: 10, keyword: '' });
+import { useUserStore } from '@/store/user';
+const userStore = useUserStore();
+
+const canSeeAllDisciplines = userStore.roleCode === 1 || 
+                             userStore.roleCode === 2 || 
+                             (userStore.roleCode === 3 && userStore.jobId.includes('纪律'));
+
+const queryParams = reactive({ 
+  page: 1, 
+  pageSize: 10, 
+  keyword: '', 
+  studentId: canSeeAllDisciplines ? undefined : userStore.studentId 
+});
 const fetchData = async () => {
   loading.value = true;
   try {

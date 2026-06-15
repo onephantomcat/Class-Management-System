@@ -26,8 +26,18 @@
         </el-button>
 
         <!-- Role 3 (纪律委员) -->
-        <el-button class="role-btn" type="warning" plain @click="handleLogin('S002', 3, '纪律委员', '赵纪委')">
+        <el-button class="role-btn" type="warning" @click="handleLogin('S002', 3, '纪律委员', '赵纪委')">
           <el-icon><Warning /></el-icon> 纪律委员 (Role 3)
+        </el-button>
+
+        <!-- Role 3 (财务委员) -->
+        <el-button class="role-btn" type="warning" @click="handleLogin('S004', 3, '财务委员', '钱财务')">
+          <el-icon><Money /></el-icon> 财务委员 (Role 3)
+        </el-button>
+
+        <!-- Role 3 (文体委员) -->
+        <el-button class="role-btn" type="warning" @click="handleLogin('S005', 3, '文体委员', '孙文体')">
+          <el-icon><Trophy /></el-icon> 文体委员 (Role 3)
         </el-button>
 
         <!-- Role 4 -->
@@ -78,7 +88,7 @@ import { ref } from 'vue';
 import { useUserStore } from '@/store/user';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { UserFilled, Avatar, Reading, Warning, User, Document } from '@element-plus/icons-vue';
+import { UserFilled, Avatar, Reading, Warning, User, Document, Money, Trophy, Connection } from '@element-plus/icons-vue';
 
 const userStore = useUserStore();
 const router = useRouter();

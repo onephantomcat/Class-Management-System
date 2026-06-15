@@ -106,6 +106,37 @@
               style="margin-top: 15px"
             />
           </el-tab-pane>
+
+          <!-- 发布新活动 (班长、班主任、文体委员) -->
+          <el-tab-pane v-if="canCreateActivity" label="📝 发布新活动" name="createActivity">
+            <el-form :model="createActForm" :rules="createActRules" ref="createActFormRef" label-width="100px">
+              <el-form-item label="活动名称" prop="activityName">
+                <el-input v-model="createActForm.activityName" placeholder="请输入活动名称" />
+              </el-form-item>
+              <el-form-item label="活动类型" prop="activityType">
+                <el-select v-model="createActForm.activityType" placeholder="选择类型" style="width: 100%">
+                  <el-option label="班级团建" value="班级团建" />
+                  <el-option label="学术讲座" value="学术讲座" />
+                  <el-option label="文体竞赛" value="文体竞赛" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="活动地点" prop="location">
+                <el-input v-model="createActForm.location" placeholder="请输入活动地点" />
+              </el-form-item>
+              <el-form-item label="人数限制" prop="limitCount">
+                <el-input-number v-model="createActForm.limitCount" :min="0" style="width: 100%" placeholder="0表示不限" />
+              </el-form-item>
+              <el-form-item label="经费预算" prop="budget">
+                <el-input-number v-model="createActForm.budget" :min="0" :precision="2" style="width: 100%" placeholder="无预算则填0" />
+              </el-form-item>
+              <el-form-item label="活动时间" prop="activityDate">
+                <el-date-picker v-model="createActForm.activityDate" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="submitCreateActivity" :loading="createActLoading" style="width: 100%;">确认发布</el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
         </el-tabs>
       </el-card>
     </div>
@@ -178,7 +209,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/user';
@@ -189,16 +220,16 @@ const activeTab = ref(userStore.roleCode === 1 ? 'audit' : 'activity');
 
 const activityFormRef = ref(null);
 const activityForm = ref({
-  activityId: 'TEST_ACT_01',
-  studentId: userStore.userInfo?.studentId || '',
+  activityId: '',
+  studentId: userStore.studentId || '',
   contact: ''
 });
 
 const awardFormRef = ref(null);
 const awardForm = ref({
-  awardId: 'TEST_AWARD_01',
-  studentId: userStore.userInfo?.studentId || '',
-  studentName: userStore.userInfo?.name || '',
+  awardId: '',
+  studentId: userStore.studentId || '',
+  studentName: userStore.studentName || '',
   material: ''
 });
 
@@ -206,6 +237,20 @@ const auditFormRef = ref(null);
 const auditForm = ref({
   applicationId: '',
   level: ''
+});
+
+const canCreateActivity = computed(() => {
+  return userStore.roleCode === 1 || userStore.roleCode === 2 || (userStore.roleCode === 3 && userStore.jobId && userStore.jobId.includes('文体'));
+});
+
+const createActFormRef = ref(null);
+const createActForm = ref({
+  activityName: '',
+  activityType: '',
+  location: '',
+  limitCount: 0,
+  activityDate: '',
+  budget: 0
 });
 
 const activityRules = {
@@ -224,9 +269,17 @@ const auditRules = {
   level: [{ required: true, message: '请选择授予等级', trigger: 'change' }]
 };
 
+const createActRules = {
+  activityName: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
+  activityType: [{ required: true, message: '请选择类型', trigger: 'change' }],
+  location: [{ required: true, message: '请输入地点', trigger: 'blur' }],
+  activityDate: [{ required: true, message: '请选择时间', trigger: 'change' }]
+};
+
 const activityLoading = ref(false);
 const awardLoading = ref(false);
 const auditLoading = ref(false);
+const createActLoading = ref(false);
 const tableLoading = ref(false);
 
 const activityStats = ref([]);
@@ -280,7 +333,7 @@ const submitActivity = async () => {
       try {
         const payload = {
           ...activityForm.value,
-          operatorRole: userStore.userInfo?.roleCode || 4
+          operatorRole: userStore.roleCode || 4
         };
         const res = await api.post('/api/triggers/activities/registrations', payload);
         ElMessage.success(res.message || '报名成功！');
@@ -302,7 +355,7 @@ const submitAward = async () => {
       try {
         const payload = {
           ...awardForm.value,
-          operatorRole: userStore.userInfo?.roleCode || 4
+          operatorRole: userStore.roleCode || 4
         };
         const res = await api.post('/api/triggers/awards/applications', payload);
         ElMessage.success(res.message || '申请成功！');
@@ -332,6 +385,29 @@ const submitAudit = async () => {
         ElMessage.error(error.response?.data?.message || '操作失败');
       } finally {
         auditLoading.value = false;
+      }
+    }
+  });
+};
+
+const submitCreateActivity = async () => {
+  if (!createActFormRef.value) return;
+  await createActFormRef.value.validate(async (valid) => {
+    if (valid) {
+      createActLoading.value = true;
+      try {
+        const payload = {
+          ...createActForm.value,
+          studentId: userStore.studentId || 'SYSTEM',
+          studentName: userStore.studentName || '系统用户'
+        };
+        const res = await api.post('/api/triggers/activities', payload);
+        ElMessage.success(res.message || '活动发布成功！');
+        createActFormRef.value.resetFields();
+      } catch (error) {
+        ElMessage.error(error.response?.data?.message || '发布失败');
+      } finally {
+        createActLoading.value = false;
       }
     }
   });
