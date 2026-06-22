@@ -41,4 +41,7 @@ export class ViewsController {
 
   @Get('activity-registration-stats')
   getActivityRegistrationStats(@Query() query: PaginationQueryDto) { return this.viewsService.getActivityRegistrationStats(query); }
+
+  @Get('system-logs')
+  getSystemLogs(@Query() query: PaginationQueryDto) { return this.viewsService.getSystemLogs(query); }
 }

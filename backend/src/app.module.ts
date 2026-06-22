@@ -25,7 +25,8 @@ import {
   StudentDisciplineView,
   ClassAttendanceStatsView,
   AwardApplicationView,
-  ActivityRegistrationStatsView
+  ActivityRegistrationStatsView,
+  SystemLogView
 } from './views/entities/views.entity';
 
 import { UsersModule } from './users/users.module';
@@ -63,7 +64,8 @@ import { CoursesModule } from './courses/courses.module';
       StudentDisciplineView,
       ClassAttendanceStatsView,
       AwardApplicationView,
-      ActivityRegistrationStatsView
+      ActivityRegistrationStatsView,
+      SystemLogView
     ])
   ],
   controllers: [

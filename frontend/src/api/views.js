@@ -23,3 +23,6 @@ export function getClassAttendanceStats(params) { return request({ url: '/api/vi
 // 6. 综合评优与活动管理模块
 export function getAwardApplications(params) { return request({ url: '/api/views/award-applications', method: 'get', params }); }
 export function getActivityRegistrationStats(params) { return request({ url: '/api/views/activity-registration-stats', method: 'get', params }); }
+
+// 7. 系统日志模块
+export function getSystemLogs(params) { return request({ url: '/api/views/system-logs', method: 'get', params }); }

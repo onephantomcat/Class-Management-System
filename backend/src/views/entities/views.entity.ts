@@ -171,3 +171,18 @@ export class ActivityRegistrationStatsView {
   @ViewColumn({ name: '实际报名人数' }) regCount: number;
   @ViewColumn({ name: '实际到场人数' }) attendCount: number;
 }
+
+// ==========================================
+// 7. 系统日志模块
+// ==========================================
+@ViewEntity({ name: '系统全局操作日志表' })
+export class SystemLogView {
+  @ViewColumn({ name: '操作编号' }) logId: string;
+  @ViewColumn({ name: '操作人学工号' }) operatorId: string;
+  @ViewColumn({ name: '操作模块' }) module: string;
+  @ViewColumn({ name: '操作类型' }) type: string;
+  @ViewColumn({ name: '操作内容' }) content: string;
+  @ViewColumn({ name: '操作时间' }) operateTime: Date;
+  @ViewColumn({ name: '关联业务编号' }) businessId: string;
+  @ViewColumn({ name: '操作结果' }) result: string;
+}

@@ -13,7 +13,8 @@ import {
   StudentDisciplineView,
   ClassAttendanceStatsView,
   AwardApplicationView,
-  ActivityRegistrationStatsView
+  ActivityRegistrationStatsView,
+  SystemLogView
 } from './entities/views.entity';
 import { PaginationQueryDto, PaginatedResponse } from './dto/pagination.dto';
 
@@ -31,7 +32,8 @@ export class ViewsService {
     @InjectRepository(StudentDisciplineView) private readonly studentDisciplineRepo: Repository<StudentDisciplineView>,
     @InjectRepository(ClassAttendanceStatsView) private readonly classAttendanceStatsRepo: Repository<ClassAttendanceStatsView>,
     @InjectRepository(AwardApplicationView) private readonly awardApplicationRepo: Repository<AwardApplicationView>,
-    @InjectRepository(ActivityRegistrationStatsView) private readonly activityRegistrationStatsRepo: Repository<ActivityRegistrationStatsView>
+    @InjectRepository(ActivityRegistrationStatsView) private readonly activityRegistrationStatsRepo: Repository<ActivityRegistrationStatsView>,
+    @InjectRepository(SystemLogView) private readonly systemLogRepo: Repository<SystemLogView>
   ) {}
 
   private async getPaginated<T>(
@@ -106,5 +108,9 @@ export class ViewsService {
   }
   getActivityRegistrationStats(query: PaginationQueryDto) {
     return this.getPaginated(this.activityRegistrationStatsRepo, query, ['activityName']);
+  }
+  // 7.
+  getSystemLogs(query: PaginationQueryDto) {
+    return this.getPaginated(this.systemLogRepo, query, ['operatorId', 'module', 'type', 'content']);
   }
 }

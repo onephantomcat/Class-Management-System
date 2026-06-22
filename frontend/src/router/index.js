@@ -143,6 +143,11 @@ const routes = [
         path: 'triggers/dashboard',
         component: () => import('@/views/triggers/TriggersDashboard.vue'),
         meta: { roles: [1, 2], title: '全业务触发控制台' }
+      },
+      {
+        path: 'views/system-logs',
+        component: () => import('@/views/SystemLogsView.vue'),
+        meta: { roles: [1, 2], title: '系统全局日志' }
       }
     ]
   },

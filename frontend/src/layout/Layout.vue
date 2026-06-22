@@ -50,6 +50,7 @@
             <el-menu-item index="/users/management">用户与权限管理</el-menu-item>
             <el-menu-item index="/functions/dashboard">实时标量预警大盘</el-menu-item>
             <el-menu-item index="/triggers/dashboard">全业务触发控制台</el-menu-item>
+            <el-menu-item index="/views/system-logs">系统全局操作日志</el-menu-item>
           </el-sub-menu>
         </template>
 
