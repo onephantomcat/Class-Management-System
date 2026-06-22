@@ -44,4 +44,7 @@ export class ViewsController {
 
   @Get('system-logs')
   getSystemLogs(@Query() query: PaginationQueryDto) { return this.viewsService.getSystemLogs(query); }
+
+  @Get('approval-flows')
+  getApprovalFlows(@Query() query: PaginationQueryDto) { return this.viewsService.getApprovalFlows(query); }
 }

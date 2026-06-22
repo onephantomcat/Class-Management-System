@@ -26,7 +26,8 @@ import {
   ClassAttendanceStatsView,
   AwardApplicationView,
   ActivityRegistrationStatsView,
-  SystemLogView
+  SystemLogView,
+  ApprovalFlowMasterView
 } from './views/entities/views.entity';
 
 import { UsersModule } from './users/users.module';
@@ -65,7 +66,8 @@ import { CoursesModule } from './courses/courses.module';
       ClassAttendanceStatsView,
       AwardApplicationView,
       ActivityRegistrationStatsView,
-      SystemLogView
+      SystemLogView,
+      ApprovalFlowMasterView
     ])
   ],
   controllers: [

@@ -72,8 +72,8 @@ const fetchData = async () => {
       pageSize: pageSize.value,
       keyword: searchKeyword.value
     });
-    tableData.value = res.data.list;
-    total.value = res.data.total;
+    tableData.value = res.list;
+    total.value = res.total;
   } catch (error) {
     ElMessage.error('获取系统日志失败');
   } finally {

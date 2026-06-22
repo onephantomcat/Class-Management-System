@@ -186,3 +186,23 @@ export class SystemLogView {
   @ViewColumn({ name: '关联业务编号' }) businessId: string;
   @ViewColumn({ name: '操作结果' }) result: string;
 }
+
+// ==========================================
+// 8. 全局审批流水大盘
+// ==========================================
+@ViewEntity({ name: '审批流程总表' })
+export class ApprovalFlowMasterView {
+  @ViewColumn({ name: '审批编号' }) approvalId: string;
+  @ViewColumn({ name: '关联业务编号' }) businessId: string;
+  @ViewColumn({ name: '申请人学工号' }) applicantId: string;
+  @ViewColumn({ name: '所属模块' }) module: string;
+  @ViewColumn({ name: '申请内容' }) content: string;
+  @ViewColumn({ name: '申请时间' }) applyTime: Date;
+  @ViewColumn({ name: '当前审批节点' }) currentNode: string;
+  @ViewColumn({ name: '审批人学工号' }) reviewerId: string;
+  @ViewColumn({ name: '审批人姓名' }) reviewerName: string;
+  @ViewColumn({ name: '审核意见' }) opinion: string;
+  @ViewColumn({ name: '审批状态' }) status: string;
+  @ViewColumn({ name: '审核时间' }) reviewTime: Date;
+  @ViewColumn({ name: '流程完结时间' }) finishTime: Date;
+}

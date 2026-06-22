@@ -14,7 +14,8 @@ import {
   ClassAttendanceStatsView,
   AwardApplicationView,
   ActivityRegistrationStatsView,
-  SystemLogView
+  SystemLogView,
+  ApprovalFlowMasterView
 } from './entities/views.entity';
 import { PaginationQueryDto, PaginatedResponse } from './dto/pagination.dto';
 
@@ -33,7 +34,8 @@ export class ViewsService {
     @InjectRepository(ClassAttendanceStatsView) private readonly classAttendanceStatsRepo: Repository<ClassAttendanceStatsView>,
     @InjectRepository(AwardApplicationView) private readonly awardApplicationRepo: Repository<AwardApplicationView>,
     @InjectRepository(ActivityRegistrationStatsView) private readonly activityRegistrationStatsRepo: Repository<ActivityRegistrationStatsView>,
-    @InjectRepository(SystemLogView) private readonly systemLogRepo: Repository<SystemLogView>
+    @InjectRepository(SystemLogView) private readonly systemLogRepo: Repository<SystemLogView>,
+    @InjectRepository(ApprovalFlowMasterView) private readonly approvalFlowMasterRepo: Repository<ApprovalFlowMasterView>
   ) {}
 
   private async getPaginated<T>(
@@ -112,5 +114,9 @@ export class ViewsService {
   // 7.
   getSystemLogs(query: PaginationQueryDto) {
     return this.getPaginated(this.systemLogRepo, query, ['operatorId', 'module', 'type', 'content']);
+  }
+  // 8.
+  getApprovalFlows(query: PaginationQueryDto) {
+    return this.getPaginated(this.approvalFlowMasterRepo, query, ['approvalId', 'businessId', 'applicantId', 'module', 'content']);
   }
 }

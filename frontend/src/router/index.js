@@ -148,6 +148,11 @@ const routes = [
         path: 'views/system-logs',
         component: () => import('@/views/SystemLogsView.vue'),
         meta: { roles: [1, 2], title: '系统全局日志' }
+      },
+      {
+        path: 'views/approval-flows',
+        component: () => import('@/views/ApprovalFlowsView.vue'),
+        meta: { roles: [1, 2], title: '全局审批流程大盘' }
       }
     ]
   },

@@ -26,3 +26,6 @@ export function getActivityRegistrationStats(params) { return request({ url: '/a
 
 // 7. 系统日志模块
 export function getSystemLogs(params) { return request({ url: '/api/views/system-logs', method: 'get', params }); }
+
+// 8. 审批流程总表
+export function getApprovalFlows(params) { return request({ url: '/api/views/approval-flows', method: 'get', params }); }

@@ -1,0 +1,1503 @@
+物理结构设计及系统实现
+课题
+名称：
+ 
+       
+数据库课程设计
+         
+上课
+时间
+：
+       
+   
+  2026.6
+  
+           
+小组成员以及文档完成工作说明
+说明：在下面表格中简要列出小组各成员在完成本文档过程中的具体工作！
+序号
+学号
+姓名
+完成工作数量（单位：个）
+承担的其它工作
+索引
+表
+视图
+存储过程
+触发器
+函数
+1
+24050137
+王挚
+2
+7
+2
+2
+2
+2
+模块一、二的所有内容，整合文档，分配任务等等
+2
+24050503
+陈柔伊
+1
+4
+4
+2
+2
+2
+模块三的所有内容
+3
+24050515
+梅伊宁
+1
+1
+2
+2
+2
+2
+模块五的所有内容
+4
+24050723
+杨棋冰
+1
+3
+2
+2
+2
+2
+模块四的所有内容
+5
+24050606
+葛言诚
+1
+5
+2
+2
+2
+2
+模块六的所有内容
+ 
+6物理设计
+[
+此部分对关系模式优化，进行索引设计。每个成员对自己负责的模块的索引设计的思路进行描述，并写出表上创建索引SQL脚本。
+此部分需要备注脚本完成人的学号姓名
+]
+6.1 用户与权限管理
+模块
+（脚本完成人：王挚）
+索引设计思路：
+用户日常使用中最频繁的操作是查看“我的申请”或辅导员查看“待我审批”的记录。经常需要根据申请人学工号、审批人学工号以及审批状态进行条件筛选。因此，在审批流程总表上针对这三个字段建立普通索引，以加速流程检索。
+索引创建 SQL 脚本：
+-- 审批流程总表索引
+CREATE INDEX idx_approval_applicant ON 审批流程总表(申请人学工号);
+CREATE INDEX idx_approval_approver ON 审批流程总表(审批人学工号);
+CREATE INDEX idx_approval_status ON 审批流程总表(审批状态);
+6.2 
+日常任务与审批管理模块（脚本完成人：王挚）
+索引设计思路：
+用户需要快速查找分配给自己的任务，在日常任务表的负责人学工号字段上建立索引。
+索引创建 SQL 脚本：
+CREATE INDEX idx_task_manager ON 日常任务表(负责人学工号);
+6.3 班费收支管理模块（脚本完成人：陈柔伊）  
+索引设计思路：
+财务报表按月查询：班委在进行班费对账时，高频操作是按时间段（如某个月）汇总收入和支出。因此，需要在班费收入记录表的收入日期字段，以及班费支出申请表的申请日期字段建立索引，优化范围查询性能。
+学生个人缴费核对：需要快速定位某个学生的缴费情况，在学生缴费明细表的学工号上创建索引。
+索引创建 SQL 脚本：
+-- 班费收支日期索引
+CREATE INDEX idx_income_date ON 班费收入记录表(收入日期);
+CREATE INDEX idx_expense_date ON 班费支出申请表(申请日期);
+-- 学生缴费明细索引
+CREATE INDEX idx_payment_student ON 学生缴费明细表(学工号);
+6.
+4
+ 学业管理模块（脚本完成人：杨棋冰） 
+索引设计思路：
+成绩单查询：学生期末查询成绩或辅导员拉取某学期全班成绩单是高频并发操作。查询条件高度依赖学生学工号和学期。为了避免全表扫描，在学业成绩明细表上建立联合索引（学生学工号，学期）。
+索引创建 SQL 脚本：
+-- 学业成绩联合索引
+CREATE INDEX idx_score_student_semester ON 学业成绩明细表(学生学工号, 学期);
+6.
+5
+ 纪律管理模块（脚本完成人：梅伊宁） 
+索引设计思路：
+学生档案抽查：在评优评先或毕业考核时，系统需要快速核查某个学生是否存在违纪或缺勤记录。因此，对纪律与考勤档案表的学生学工号字段建立索引。
+索引创建 SQL 脚本：
+-- 纪律档案查询索引
+CREATE INDEX idx_discipline_student ON 纪律与考勤档案表(学生学工号);
+6.
+6
+ 综合评优与活动管理模块（脚本完成人：葛言诚） 
+查询事务预估与索引设计思路：
+评优项目筛选：学生需要查看当前“启用”状态且未过期的评优项目，在评优项目表的启用状态字段建立索引。
+活动报名查重与统计：需要快速拉取某项活动的报名名单，在活动报名表的活动编号建立索引。
+索引创建 SQL 脚本：
+-- 评优项目状态索引
+CREATE INDEX idx_eval_status ON 评优项目表(启用状态);
+-- 活动报名关联索引
+CREATE INDEX idx_signup_activity ON 活动报名表(活动编号);
+7系统SQL实现
+7.1表的创建
+[此部分每个成员写出自己负责模块创建优化后所有关系模式的SQL脚本，考虑
+完整性约束条件。
+此部分需要备注脚本完成人的学号姓名
+]
+7.1.1 
+用户与权限管理模块
+（
+脚本完成人：王挚
+）
+以下为四个全局公共表：
+-- 1. 角色表
+CREATE TABLE 角色表 (
+  角色编码 VARCHAR(50) PRIMARY KEY COMMENT '角色编码',
+  角色名称 VARCHAR(100) NOT NULL COMMENT '角色名称',
+  权限配置清单 TEXT COMMENT '权限配置清单',
+  创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  最后调整时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后调整时间'
+) ENGINE=InnoDB;
+-- 2. 用户账号与权限信息表
+CREATE TABLE 用户账号与权限信息表 (
+  学工号 VARCHAR(50) PRIMARY KEY COMMENT '学工号',
+  姓名 VARCHAR(50) NOT NULL COMMENT '姓名',
+  所属班级 VARCHAR(100) COMMENT '所属班级',
+  角色编码 VARCHAR(50) NOT NULL COMMENT '角色编码',
+  角色名称 VARCHAR(100) COMMENT '角色名称',
+  联系方式 VARCHAR(50) COMMENT '联系方式',
+  登录密码 VARCHAR(255) NOT NULL COMMENT '登录密码',
+  账号状态 VARCHAR(20) DEFAULT '正常' COMMENT '账号状态',
+  权限配置明细 TEXT COMMENT '权限配置明细',
+  创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  最后登录时间 DATETIME COMMENT '最后登录时间',
+  最后更新时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+  FOREIGN KEY (角色编码) REFERENCES 角色表(角色编码) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+-- 3. 审批流程总表
+CREATE TABLE 审批流程总表 (
+  审批编号 VARCHAR(50) PRIMARY KEY COMMENT '审批编号',
+  审批类型 VARCHAR(50) NOT NULL COMMENT '审批类型',
+  申请人学工号 VARCHAR(50) NOT NULL COMMENT '申请人学工号',
+  申请人姓名 VARCHAR(50) COMMENT '申请人姓名',
+  申请内容 TEXT NOT NULL COMMENT '申请内容',
+  附件材料 VARCHAR(255) COMMENT '附件材料',
+  申请时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+  当前审批节点 VARCHAR(100) COMMENT '当前审批节点',
+  审批人学工号 VARCHAR(50) COMMENT '审批人学工号',
+  审批人姓名 VARCHAR(50) COMMENT '审批人姓名',
+  审核意见 TEXT COMMENT '审核意见',
+  审批状态 VARCHAR(20) DEFAULT '待审批' COMMENT '审批状态',
+  审核时间 DATETIME COMMENT '审核时间',
+  流程完结时间 DATETIME COMMENT '流程完结时间',
+  关联业务编号 VARCHAR(50) COMMENT '关联业务编号',
+  FOREIGN KEY (申请人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (审批人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+-- 4. 系统全局操作日志表
+CREATE TABLE 系统全局操作日志表 (
+  操作编号 VARCHAR(50) PRIMARY KEY COMMENT '操作编号',
+  操作人学工号 VARCHAR(50) NOT NULL COMMENT '操作人学工号',
+  操作模块 VARCHAR(50) NOT NULL COMMENT '操作模块',
+  操作类型 VARCHAR(50) NOT NULL COMMENT '操作类型',
+  操作内容 TEXT COMMENT '操作内容',
+  操作IP VARCHAR(50) COMMENT '操作 IP',
+  操作时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  操作结果 VARCHAR(20) NOT NULL COMMENT '操作结果',
+  关联业务编号 VARCHAR(50) COMMENT '关联业务编号',
+  审核状态 VARCHAR(20) COMMENT '审核状态',
+  审核意见 TEXT COMMENT '审核意见',
+  FOREIGN KEY (操作人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+此表为模块专用表：
+-- 5. 权限变更申请表
+CREATE TABLE 权限变更申请表 (
+  申请编号 VARCHAR(50) PRIMARY KEY COMMENT '申请编号',
+  申请人学工号 VARCHAR(50) NOT NULL COMMENT '申请人学工号',
+  目标用户学工号 VARCHAR(50) NOT NULL COMMENT '目标用户学工号',
+  变更内容 TEXT NOT NULL COMMENT '变更内容',
+  变更事由 TEXT COMMENT '变更事由',
+  申请时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+  审核人学工号 VARCHAR(50) COMMENT '审核人学工号',
+  审核状态 VARCHAR(20) DEFAULT '待审核' COMMENT '审核状态',
+  审核意见 TEXT COMMENT '审核意见',
+  审核时间 DATETIME COMMENT '审核时间',
+  关联审批编号 VARCHAR(50) COMMENT '关联审批编号',
+  FOREIGN KEY (申请人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (目标用户学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (审核人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL,
+  FOREIGN KEY (关联审批编号) REFERENCES 审批流程总表(审批编号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+7.1.2 
+日常任务与审批管理模块
+（
+脚本完成人：王挚
+）
+以下为模块专属表：
+-- 
+1
+. 日常任务表
+CREATE TABLE 日常任务表 (
+  任务编号 VARCHAR(50) PRIMARY KEY COMMENT '任务编号',
+  任务类型 VARCHAR(50) NOT NULL COMMENT '任务类型',
+  任务内容 TEXT NOT NULL COMMENT '任务内容',
+  完成时限 DATETIME NOT NULL COMMENT '完成时限',
+  验收标准 TEXT COMMENT '验收标准',
+  任务进度 VARCHAR(50) DEFAULT '0%' COMMENT '任务进度',
+  完成成果 TEXT COMMENT '完成成果',
+  验收状态 VARCHAR(20) DEFAULT '待验收' COMMENT '验收状态',
+  验收意见 TEXT COMMENT '验收意见',
+  发布人学工号 VARCHAR(50) NOT NULL COMMENT '发布人学工号',
+  负责人学工号 VARCHAR(50) COMMENT '负责人学工号',
+  发布时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+  完结时间 DATETIME COMMENT '完结时间',
+  FOREIGN KEY (发布人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (负责人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+-- 
+2
+. 请假申请表
+CREATE TABLE 请假申请表 (
+  请假编号 VARCHAR(50) PRIMARY KEY COMMENT '请假编号',
+  审批编号 VARCHAR(50) NOT NULL COMMENT '审批编号',
+  请假类型 VARCHAR(50) NOT NULL COMMENT '请假类型',
+  请假起止时间 VARCHAR(100) NOT NULL COMMENT '请假起止时间',
+  请假时长 DECIMAL(5,1) NOT NULL COMMENT '请假时长',
+  请假事由 TEXT NOT NULL COMMENT '请假事由',
+  证明材料 VARCHAR(255) COMMENT '证明材料',
+  销假时间 DATETIME COMMENT '销假时间',
+  销假状态 VARCHAR(20) DEFAULT '未销假' COMMENT '销假状态',
+  FOREIGN KEY (审批编号) REFERENCES 审批流程总表(审批编号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+7.1.3 
+班费收支管理
+模块
+（
+脚本完成人：陈柔伊
+）
+以下为模块专属表：
+-- 
+1
+. 班费收入记录表
+CREATE TABLE 班费收入记录表 (
+  收入编号 VARCHAR(50) PRIMARY KEY COMMENT '收入编号',
+  收入日期 DATE NOT NULL COMMENT '收入日期',
+  收入金额 DECIMAL(10,2) NOT NULL COMMENT '收入金额',
+  收入类型 VARCHAR(50) NOT NULL COMMENT '收入类型',
+  缴费方式 VARCHAR(50) NOT NULL COMMENT '缴费方式',
+  备注 TEXT COMMENT '备注',
+  经手人学工号 VARCHAR(50) NOT NULL COMMENT '经手人学工号',
+  FOREIGN KEY (经手人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+-- 
+2
+. 班费支出申请表
+CREATE TABLE 班费支出申请表 (
+  支出编号 VARCHAR(50) PRIMARY KEY COMMENT '支出编号',
+  申请日期 DATE NOT NULL COMMENT '申请日期',
+  支出事由 TEXT NOT NULL COMMENT '支出事由',
+  支出金额 DECIMAL(10,2) NOT NULL COMMENT '支出金额',
+  票据凭证 VARCHAR(255) COMMENT '票据凭证',
+  审批状态 VARCHAR(20) DEFAULT '待初审' COMMENT '审批状态',
+  支付日期 DATE COMMENT '支付日期',
+  公示状态 VARCHAR(20) DEFAULT '未公示' COMMENT '公示状态',
+  申请人学工号 VARCHAR(50) NOT NULL COMMENT '申请人学工号',
+  初审人学工号 VARCHAR(50) COMMENT '初审人学工号',
+  终审人学工号 VARCHAR(50) COMMENT '终审人学工号',
+  FOREIGN KEY (申请人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (初审人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL,
+  FOREIGN KEY (终审人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+-- 
+3
+. 班费余额台账表
+CREATE TABLE 班费余额台账表 (
+  台账ID VARCHAR(50) PRIMARY KEY COMMENT '台账 ID',
+  统计日期 DATE NOT NULL COMMENT '统计日期',
+  期初余额 DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '期初余额',
+  本期收入 DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '本期收入',
+  本期支出 DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '本期支出',
+  期末余额 DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '期末余额',
+  生成人学工号 VARCHAR(50) NOT NULL COMMENT '生成人学工号',
+  FOREIGN KEY (生成人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+-- 
+4
+. 学生缴费明细表
+CREATE TABLE 学生缴费明细表 (
+  缴费明细ID VARCHAR(50) PRIMARY KEY COMMENT '缴费明细 ID',
+  学工号 VARCHAR(50) NOT NULL COMMENT '学工号',
+  收入编号 VARCHAR(50) NOT NULL COMMENT '收入编号',
+  缴费状态 VARCHAR(20) DEFAULT '未缴费' COMMENT '缴费状态',
+  缴费时间 DATETIME COMMENT '缴费时间',
+  缴费金额 DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '缴费金额',
+  FOREIGN KEY (学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (收入编号) REFERENCES 班费收入记录表(收入编号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+7.1.4 学业管理
+模块
+（
+脚本完成人：杨棋冰
+）
+以下为模块专属表：
+-- 
+1
+. 学生缴费明细表
+CREATE TABLE 班级学期课表 (
+  课程编号 VARCHAR(50) PRIMARY KEY COMMENT '课程编号',
+  课程名称 VARCHAR(100) NOT NULL COMMENT '课程名称',
+  所属班级 VARCHAR(100) NOT NULL COMMENT '所属班级',
+  任课教师 VARCHAR(50) NOT NULL COMMENT '任课教师',
+  上课时间 VARCHAR(100) COMMENT '上课时间',
+  上课地点 VARCHAR(100) COMMENT '上课地点',
+  学分 DECIMAL(3,1) NOT NULL COMMENT '学分',
+  学期 VARCHAR(50) NOT NULL COMMENT '学期',
+  更新时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB;
+-- 
+2
+. 学业成绩明细表
+CREATE TABLE 学业成绩明细表 (
+  成绩编号 VARCHAR(50) PRIMARY KEY COMMENT '成绩编号',
+  学生学工号 VARCHAR(50) NOT NULL COMMENT '学生学工号',
+  课程编号 VARCHAR(50) NOT NULL COMMENT '课程编号',
+  课程名称 VARCHAR(100) COMMENT '课程名称',
+  平时成绩 DECIMAL(5,2) DEFAULT 0.00 COMMENT '平时成绩',
+  考试成绩 DECIMAL(5,2) DEFAULT 0.00 COMMENT '考试成绩',
+  总评成绩 DECIMAL(5,2) DEFAULT 0.00 COMMENT '总评成绩',
+  学分 DECIMAL(3,1) NOT NULL COMMENT '学分',
+  绩点 DECIMAL(3,2) DEFAULT 0.00 COMMENT '绩点',
+  学期 VARCHAR(50) NOT NULL COMMENT '学期',
+  成绩状态 VARCHAR(20) DEFAULT '正常' COMMENT '成绩状态',
+  操作人学工号 VARCHAR(50) COMMENT '操作人学工号',
+  操作时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  审核状态 VARCHAR(20) DEFAULT '待审核' COMMENT '审核状态',
+  FOREIGN KEY (学生学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (课程编号) REFERENCES 班级学期课表(课程编号) ON DELETE CASCADE,
+  FOREIGN KEY (操作人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+-- 
+3
+. 学生学期绩点总表
+CREATE TABLE 学生学期绩点总表 (
+  记录编号 VARCHAR(50) PRIMARY KEY COMMENT '记录编号',
+  学生学工号 VARCHAR(50) NOT NULL COMMENT '学生学工号',
+  学期 VARCHAR(50) NOT NULL COMMENT '学期',
+  平均绩点 DECIMAL(4,2) DEFAULT 0.00 COMMENT '平均绩点',
+  挂科科目数 INT DEFAULT 0 COMMENT '挂科科目数',
+  挂科标记 VARCHAR(20) DEFAULT '无' COMMENT '挂科标记',
+  班级排名 INT COMMENT '班级排名',
+  更新时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  FOREIGN KEY (学生学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+7.1.5 纪律管理模块（
+脚本完成人：
+梅伊宁
+）
+以下为模块专属表：
+-- 
+1
+. 纪律与考勤档案表
+CREATE TABLE 纪律与考勤档案表 (
+  记录编号 VARCHAR(50) PRIMARY KEY COMMENT '记录编号',
+  学生学工号 VARCHAR(50) NOT NULL COMMENT '学生学工号',
+  请假审批编号 VARCHAR(50) COMMENT '请假审批编号',
+  记录类型 VARCHAR(20) NOT NULL COMMENT '记录类型',
+  考勤状态 VARCHAR(10) NOT NULL COMMENT '考勤状态',
+  处分类型 VARCHAR(20) COMMENT '处分类型',
+  记录人学工号 VARCHAR(50) COMMENT '记录人学工号',
+记录时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间'
+,
+  FOREIGN KEY (学生学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE,
+  FOREIGN KEY (请假审批编号) REFERENCES 审批流程总表(审批编号) ON DELETE SET NULL,
+  FOREIGN KEY (记录人学工号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE SET NULL
+) ENGINE=InnoDB;
+7.1.6 综合评优与活动管理模块（
+脚本完成人：葛言诚
+）
+以下为模块专属表：
+-- 
+1
+. 评优项目表
+CREATE TABLE 评优项目表 (
+  项目编号 VARCHAR(50) PRIMARY KEY COMMENT '项目编号',
+  项目名称 VARCHAR(100) NOT NULL COMMENT '项目名称',
+  评选类别 VARCHAR(50) NOT NULL COMMENT '评选类别',
+  评选周期 VARCHAR(50) NOT NULL COMMENT '评选周期',
+  申报条件 TEXT NOT NULL COMMENT '申报条件',
+  评选标准 TEXT NOT NULL COMMENT '评选标准',
+  名额限制 INT COMMENT '名额限制',
+  截止时间 DATETIME NOT NULL COMMENT '截止时间',
+  启用状态 VARCHAR(20) DEFAULT '启用' COMMENT '启用状态',
+  创建人学号 VARCHAR(50) NOT NULL COMMENT '创建人学号',
+  FOREIGN KEY (创建人学号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+-- 
+2
+. 评优申请表
+CREATE TABLE 评优申请表 (
+  申报编号 VARCHAR(50) PRIMARY KEY COMMENT '申报编号',
+  审批编号 VARCHAR(50) NOT NULL COMMENT '审批编号',
+  评优项目编号 VARCHAR(50) NOT NULL COMMENT '评优项目编号',
+  申请人学号 VARCHAR(50) NOT NULL COMMENT '申请人学号',
+  申报材料 TEXT NOT NULL COMMENT '申报材料',
+  初评意见 TEXT COMMENT '初评意见',
+  复评投票数 INT DEFAULT 0 COMMENT '复评投票数',
+  终评意见 TEXT COMMENT '终评意见',
+  获奖等级 VARCHAR(50) COMMENT '获奖等级',
+  公示状态 VARCHAR(20) DEFAULT '未公示' COMMENT '公示状态',
+  FOREIGN KEY (审批编号) REFERENCES 审批流程总表(审批编号) ON DELETE CASCADE,
+  FOREIGN KEY (评优项目编号) REFERENCES 评优项目表(项目编号) ON DELETE RESTRICT,
+  FOREIGN KEY (申请人学号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+-- 
+3
+. 班级活动申请表
+CREATE TABLE 班级活动申请表 (
+  活动编号 VARCHAR(50) PRIMARY KEY COMMENT '活动编号',
+  审批编号 VARCHAR(50) NOT NULL COMMENT '审批编号',
+  活动名称 VARCHAR(100) NOT NULL COMMENT '活动名称',
+  活动类型 VARCHAR(50) NOT NULL COMMENT '活动类型',
+  活动时间 DATETIME NOT NULL COMMENT '活动时间',
+  活动地点 VARCHAR(100) NOT NULL COMMENT '活动地点',
+  人数限制 INT COMMENT '人数限制',
+  经费预算 DECIMAL(10,2) DEFAULT 0.00 COMMENT '经费预算',
+  负责人学号 VARCHAR(50) NOT NULL COMMENT '负责人学号',
+  FOREIGN KEY (审批编号) REFERENCES 审批流程总表(审批编号) ON DELETE CASCADE,
+  FOREIGN KEY (负责人学号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+-- 
+4
+. 活动报名表
+CREATE TABLE 活动报名表 (
+  报名编号 VARCHAR(50) PRIMARY KEY COMMENT '报名编号',
+  活动编号 VARCHAR(50) NOT NULL COMMENT '活动编号',
+  报名人学号 VARCHAR(50) NOT NULL COMMENT '报名人学号',
+  联系方式 VARCHAR(50) NOT NULL COMMENT '联系方式',
+  报名时间 DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
+  签到状态 VARCHAR(20) DEFAULT '未签到' COMMENT '签到状态',
+  FOREIGN KEY (活动编号) REFERENCES 班级活动申请表(活动编号) ON DELETE CASCADE,
+  FOREIGN KEY (报名人学号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE CASCADE
+) ENGINE=InnoDB;
+-- 
+5
+. 活动档案表
+CREATE TABLE 活动档案表 (
+  档案编号 VARCHAR(50) PRIMARY KEY COMMENT '档案编号',
+  活动编号 VARCHAR(50) NOT NULL COMMENT '活动编号',
+  总结内容 TEXT NOT NULL COMMENT '总结内容',
+  照片附件 VARCHAR(255) COMMENT '照片附件',
+  经费明细 TEXT COMMENT '经费明细',
+  成果说明 TEXT COMMENT '成果说明',
+  归档人学号 VARCHAR(50) NOT NULL COMMENT '归档人学号',
+  FOREIGN KEY (活动编号) REFERENCES 班级活动申请表(活动编号) ON DELETE CASCADE,
+  FOREIGN KEY (归档人学号) REFERENCES 用户账号与权限信息表(学工号) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+7.2视图的创建
+[此部分写出创建视图的SQL脚本，要求
+每个成员
+至少创建2个视图，
+具体视图功能根据课程需求进行选择，不同成员之间不能出现相同的脚本
+；
+此部分需要备注脚本完成人的学号姓名
+]
+7.2.1
+ 用户与权限管理
+模块
+（脚本完成人：王挚）
+CREATE VIEW
+ 
+用户与角色详细信息 AS
+SELECT 
+    u.学工号, 
+    u.姓名, 
+    u.所属班级, 
+    r.角色名称, 
+    u.联系方式,
+    u.账号状态
+FROM 用户账号与权限信息表 u
+JOIN 角色表 r ON u.角色编码 = r.角色编码;
+7.2.2 
+日常任务与审批管理模块
+（
+脚本完成人：王挚
+）
+CREATE VIEW 
+待办审批事务
+ AS
+SELECT 
+    a.审批编号, 
+    a.审批类型, 
+    a.申请人学工号, 
+    u.姓名 AS 申请人姓名,
+    a.申请内容, 
+    a.申请时间, 
+    a.当前审批节点
+FROM 审批流程总表 a
+LEFT JOIN 用户账号与权限信息表 u ON a.申请人学工号 = u.学工号
+WHERE a.审批状态 = '待审批';
+7.2.3 
+班费收支管理
+模块
+（
+脚本完成人：陈柔伊
+）
+CREATE VIEW 班费收入明细 AS
+SELECT
+r.收入编号,
+r.收入日期,
+r.收入金额,
+r.收入类型,
+r.缴费方式,
+r.备注,
+r.经手人学工号,
+u.姓名 AS 经手人姓名
+FROM 班费收入记录表 r
+JOIN 用户账号与权限信息表 u ON r.经手人学工号 = u.学工号
+ORDER BY r.收入日期 DESC;
+CREATE VIEW 班费支出明细 AS
+SELECT 
+e.支出编号,
+e.申请日期,
+e.支出事由,
+e.支出金额,
+e.票据凭证,
+e.审批状态,
+e.支付日期,
+e.公示状态,
+e.申请人学工号,
+e.初审人学工号,
+e.终审人学工号,
+a.姓名 AS 申请人姓名,
+b.姓名 AS 初审人姓名,
+c.姓名 AS 终审人姓名
+FROM 班费支出申请表 e
+LEFT JOIN 用户账号与权限信息表 a ON e.申请人学工号 = a.学工号
+LEFT JOIN 用户账号与权限信息表 b ON e.初审人学工号 = b.学工号
+LEFT JOIN 用户账号与权限信息表 c ON e.终审人学工号 = c.学工号
+-- 因为是已支出明细，所以需要筛选条件已审批通过
+WHERE e.审批状态 = '已通过' AND e.支付日期 IS NOT NULL
+ORDER BY e.支付日期 DESC;
+CREATE VIEW 待审批班费支出 AS
+SELECT 
+e.支出编号,
+e.申请日期,
+e.支出事由,
+e.支出金额,
+a.姓名 AS 申请人姓名,
+e.审批状态
+FROM 班费支出申请表 e
+JOIN 用户账号与权限信息表 a ON e.申请人学工号 = a.学工号
+WHERE e.审批状态 IN ('待初审', '待终审')
+ORDER BY e.申请日期 ASC;
+CREATE VIEW 
+学生缴费情况明细 AS
+SELECT 
+s.学工号,
+s.姓名,
+s.所属班级,
+r.收入编号,
+r.收入类型,
+d.缴费状态,
+d.缴费时间,
+d.缴费金额,
+r.收入金额 AS 应缴金额,
+r.收入金额 - d.缴费金额 AS 欠费金额
+FROM 学生缴费明细表 d
+JOIN 用户账号与权限信息表 s ON d.学工号 = s.学工号
+JOIN 班费收入记录表 r ON d.收入编号 = r.收入编号
+ORDER BY d.缴费状态 DESC, s.所属班级, s.学工号;
+7.2.4 学业管理
+模块
+（
+脚本完成人：杨棋冰
+）
+CREATE OR REPLACE VIEW 学生个人学业总览 AS
+SELECT
+    s.学生学工号,
+    u.姓名,
+    u.所属班级,
+    s.学期,
+    s.平均绩点,
+    s.挂科科目数,
+    s.挂科标记,
+    s.班级排名
+FROM 学生学期绩点总表 s
+JOIN 用户账号与权限信息表 u ON s.学生学工号 = u.学工号;
+CREATE OR REPLACE VIEW 班级成绩与课表明细 AS
+SELECT
+    sc.成绩编号,
+    sc.学生学工号,
+    u.姓名,
+    sc.课程编号,
+    c.课程名称,
+    c.任课教师,
+    c.上课时间,
+    c.上课地点,
+    sc.平时成绩,
+    sc.考试成绩,
+    sc.总评成绩,
+    sc.绩点,
+    sc.学期,
+    sc.成绩状态
+FROM 学业成绩明细表 sc
+JOIN 班级学期课表 c ON sc.课程编号 = c.课程编号
+JOIN 用户账号与权限信息表 u ON sc.学生学工号 = u.学工号;
+7.2.5 纪律管理模块（
+脚本完成人：
+梅伊宁
+）
+CREATE OR REPLACE VIEW 学生个人纪律档案
+ 
+AS
+SELECT 
+    d.记录编号,
+    d.学生学工号,
+    u.姓名,
+    u.所属班级,
+    d.记录类型,          -- '考勤', '违纪', '表扬', '处分'
+    d.考勤状态,
+    d.处分类型,
+    d.请假审批编号, 
+    d.记录人学工号,
+    ru.姓名 AS 记录人姓名,
+    d.记录时间
+FROM 纪律与考勤档案表 d
+JOIN 用户账号与权限信息表 u ON d.学生学工号 = u.学工号
+LEFT JOIN 用户账号与权限信息表 ru ON d.记录人学工号 = ru.学工号;
+CREATE OR REPLACE VIEW 班级出勤率周统计 AS
+SELECT 
+    u.所属班级,
+    DATE_FORMAT(d.记录时间, '%Y-%u') AS 周次,
+    COUNT(CASE WHEN d.考勤状态 = '正常出勤' THEN 1 END) AS 正常出勤次数,
+    COUNT(CASE WHEN d.考勤状态 = '迟到' THEN 1 END) AS 迟到次数,
+    COUNT(CASE WHEN d.考勤状态 = '早退' THEN 1 END) AS 早退次数,
+    COUNT(CASE WHEN d.考勤状态 = '旷课' THEN 1 END) AS 旷课次数,
+    COUNT(CASE WHEN d.考勤状态 = '请假' THEN 1 END) AS 请假次数,
+    COUNT(*) AS 总考勤次数
+FROM 纪律与考勤档案表 d
+JOIN 用户账号与权限信息表 u ON d.学生学工号 = u.学工号
+WHERE d.记录类型 = '考勤'
+GROUP BY u.所属班级, 周次
+ORDER BY u.所属班级, 周次;
+7.2.6 综合评优与活动管理模块（
+脚本完成人：葛言诚
+）
+CREATE OR REPLACE VIEW 评优申报详情 AS
+SELECT
+    ep.项目编号,
+    ep.项目名称,
+    ep.评选类别,
+    ea.申报编号,
+    ea.申请人学号,
+    u.姓名,
+    u.所属班级,
+    ea.获奖等级,
+    ea.公示状态
+FROM 评优项目表 ep
+LEFT JOIN 评优申请表 ea ON ep.项目编号 = ea.评优项目编号
+LEFT JOIN 用户账号与权限信息表 u ON ea.申请人学号 = u.学工号;
+CREATE OR REPLACE VIEW 活动报名统计 AS
+SELECT
+    act.活动编号,
+    act.活动名称,
+    act.人数限制,
+    COUNT(sign.报名编号) AS 实际报名人数,
+    SUM(IF(sign.签到状态='已签到',1,0)) AS 实际到场人数
+FROM 班级活动申请表 act
+LEFT JOIN 活动报名表 sign ON act.活动编号 = sign.活动编号
+GROUP BY act.活动编号,act.活动名称,act.人数限制;
+7.3存储过程的创建
+（
+要求每个存储过程有执行结果截图
+）
+[此部分写出创建存储过程的SQL脚本及具体演示实例，要求
+每个成员
+至少创建2个存储过程，
+具体存储过程功能根据课程需求进行选择，不同成员之间不能出现相同的脚本
+；
+此部分需要备注脚本完成人的学号姓名
+]
+7.3.1
+ 用户与权限管理
+模块
+（脚本完成人：王挚）
+存储过程1：
+DELIMITER //
+CREATE PROCEDURE sp_
+审批流程处理过程
+(
+    IN p_approval_id VARCHAR(50),
+    IN p_auditor_id VARCHAR(50),
+    IN p_result VARCHAR(20),
+    IN p_opinion TEXT
+)
+BEGIN
+    UPDATE 审批流程总表
+    SET 审批状态 = p_result,
+        审批人学工号 = p_auditor_id,
+        审核意见 = p_opinion,
+        审核时间 = NOW(),
+        -- 如果是最终通过或驳回，则记录流程完结时间
+        流程完结时间 = IF(p_result IN ('审批通过', '审批驳回'), NOW(), NULL)
+    WHERE 审批编号 = p_approval_id;
+END //
+DELIMITER ;
+执行结果：
+7.3.2 
+日常任务与审批管理模块
+（
+脚本完成人：王挚
+）
+存储过程1：
+DELIMITER //
+CREATE PROCEDURE sp_
+发布日常任务
+(
+    IN p_task_id VARCHAR(50),
+    IN p_task_type VARCHAR(50),
+    IN p_content TEXT,
+    IN p_deadline DATETIME,
+    IN p_publisher_id VARCHAR(50),
+    IN p_manager_id VARCHAR(50)
+)
+BEGIN
+    INSERT INTO 日常任务表 (
+        任务编号, 任务类型, 任务内容, 完成时限, 任务进度, 验收状态, 发布人学工号, 负责人学工号, 发布时间
+    ) VALUES (
+        p_task_id, p_task_type, p_content, p_deadline, '0%', '待验收', p_publisher_id, p_manager_id, NOW()
+    );
+END //
+DELIMITER ;
+执行结果：
+7.3.3 
+班费收支管理
+模块
+（
+脚本完成人：陈柔伊
+）
+存储过程1：
+DELIMITER //
+CREATE PROCEDURE sp_新增班费收入并生成缴费明细(
+    IN p_收入日期 DATE,
+    IN p_收入金额 DECIMAL(10,2),
+    IN p_收入类型 VARCHAR(50),
+    IN p_缴费方式 VARCHAR(50),
+    IN p_备注 TEXT,
+    IN p_经手人学工号 VARCHAR(50),
+    OUT p_生成的收入编号 VARCHAR(50)
+)
+BEGIN
+DECLARE v_收入编号 VARCHAR(50);
+    DECLARE v_学工号 VARCHAR(50);
+    DECLARE v_done INT DEFAULT 0;
+    DECLARE student_cursor CURSOR FOR
+SELECT 学工号 FROM 用户账号与权限信息表 WHERE 角色编码 != 'ROLE_TEACHER';
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+    
+    -- 收入编号格式：INCOME_YYYYMMDD_序号
+    SET v_收入编号 = CONCAT('INCOME_', DATE_FORMAT(p_收入日期, '%Y%m%d'), '_', 
+        LPAD((SELECT COUNT(*) + 1 FROM 班费收入记录表 WHERE 收入日期 = p_收入日期), 3, '0'));
+    
+    START TRANSACTION;
+    INSERT INTO 班费收入记录表(收入编号, 收入日期, 收入金额, 收入类型, 缴费方式, 备注, 经手人学工号)
+    VALUES(v_收入编号, p_收入日期, 0, p_收入类型, p_缴费方式, p_备注, p_经手人学工号);
+    
+    OPEN student_cursor;
+    
+    FETCH student_cursor INTO v_学工号;
+    
+    student_loop: LOOP
+        IF v_done = 1 THEN
+            LEAVE student_loop;
+        END IF;
+        
+        INSERT INTO 学生缴费明细表(缴费明细ID, 学工号, 收入编号, 缴费金额)
+        VALUES(
+            CONCAT('PAY_', v_收入编号, '_', v_学工号),
+            v_学工号,
+            v_收入编号,
+            p_收入金额
+        );
+        FETCH student_cursor INTO v_学工号;
+    END LOOP;
+    
+    CLOSE student_cursor;
+    COMMIT;
+    SET p_生成的收入编号 = v_收入编号;
+    SELECT CONCAT('成功创建班费收入记录，收入编号：', v_收入编号, '，已为', (SELECT COUNT(*) FROM 用户账号与权限信息表 WHERE 角色编码 = 'ROLE_STUDENT'), '名学生生成缴费明细') AS 执行结果;
+END //
+DELIMITER ;
+执行结果：
+存储过程2：
+USE 班费管理系统;
+DELIMITER //
+CREATE PROCEDURE sp_审批班费支出申请(
+    IN p_支出编号 VARCHAR(50),
+    IN p_审批人学工号 VARCHAR(50),
+    IN p_审批结果 VARCHAR(20),
+    IN p_审核意见 TEXT
+)
+BEGIN
+    DECLARE v_当前状态 VARCHAR(20);
+    DECLARE v_初审人学工号 VARCHAR(50);
+    DECLARE v_终审人学工号 VARCHAR(50);
+    DECLARE v_审批人姓名 VARCHAR(50);
+    DECLARE v_申请人姓名 VARCHAR(50);
+    DECLARE v_审批编号 VARCHAR(50);
+    DECLARE v_申请人学工号 VARCHAR(50);
+    DECLARE v_申请日期 DATE;
+    DECLARE v_支出事由 TEXT;
+    DECLARE v_票据凭证 VARCHAR(255);
+-- 信息获取
+    SELECT 姓名 
+    INTO v_审批人姓名 
+    FROM 用户账号与权限信息表 
+    WHERE 学工号 = p_审批人学工号;
+    SELECT 审批状态,初审人学工号,终审人学工号,申请人学工号,申请日期,支出事由,票据凭证
+    INTO v_当前状态,v_初审人学工号,v_终审人学工号,v_申请人学工号,v_申请日期,v_支出事由,v_票据凭证
+    FROM 班费支出申请表 
+    WHERE 支出编号 = p_支出编号;
+-- 确认状态合法性
+    IF v_当前状态 IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '错误：该支出申请不存在';
+    END IF;
+    IF v_当前状态 NOT IN ('待初审','待终审') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '错误：该申请已完成审批或已被拒绝，无法再次审批';
+    END IF;
+    SELECT 姓名 INTO v_申请人姓名 FROM 用户账号与权限信息表 WHERE 学工号 = v_申请人学工号;
+    SET v_审批编号 = CONCAT('AP_', DATE_FORMAT(NOW(), '%Y%m%d'), '_', 
+        LPAD((SELECT COUNT(*) + 1 FROM 审批流程总表 WHERE DATE(审核时间) = CURDATE()), 3, '0'));
+    START TRANSACTION;
+    CASE p_审批结果
+        WHEN '初审通过' THEN
+            IF v_当前状态 != '待初审' THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '错误：该申请当前不是待初审状态';
+            END IF;
+            UPDATE 班费支出申请表 
+            SET 审批状态 = '待终审',
+初审人学工号 = p_审批人学工号 
+            WHERE 支出编号 = p_支出编号;
+            INSERT INTO 审批流程总表
+            (审批编号,审批类型,申请人学工号,申请人姓名,申请内容,附件材料,
+            申请时间,当前审批节点,审批人学工号,审批人姓名,审核意见,审批状态,
+            审核时间,流程完结时间,关联业务编号)
+            VALUES
+            (v_审批编号,'班费支出初审',v_申请人学工号,v_申请人姓名,v_支出事由,v_票据凭证,
+            v_申请日期,'待终审',p_审批人学工号,v_审批人姓名,p_审核意见,'初审通过',
+            NOW(),NULL,p_支出编号);
+            SELECT '初审通过，申请已进入终审阶段' AS 执行结果;
+        WHEN '终审通过' THEN
+            IF v_当前状态 != '待终审' THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '错误：该申请当前不是待终审状态';
+            END IF;
+            UPDATE 班费支出申请表 
+            SET 审批状态 = '已通过',
+终审人学工号 = p_审批人学工号,
+                支付日期 = CURDATE() 
+            WHERE 支出编号 = p_支出编号;
+            INSERT INTO 审批流程总表
+            (审批编号,审批类型,申请人学工号,申请人姓名,申请内容,附件材料,
+            申请时间,当前审批节点,审批人学工号,审批人姓名,审核意见,审批状态,
+            审核时间,流程完结时间,关联业务编号)
+            VALUES
+            (v_审批编号,'班费支出终审',v_申请人学工号,v_申请人姓名,v_支出事由,v_票据凭证,
+            v_申请日期,'已通过',p_审批人学工号,v_审批人姓名,p_审核意见,'终审通过',
+            NOW(),NOW(),p_支出编号);
+            SELECT '终审通过，申请已完成审批，款项将在今日支付' AS 执行结果;
+        WHEN '拒绝' THEN
+            UPDATE 班费支出申请表 
+            SET 审批状态 = '已拒绝' 
+            WHERE 支出编号 = p_支出编号;
+            INSERT INTO 审批流程总表
+            (审批编号,审批类型,申请人学工号,申请人姓名,申请内容,附件材料,
+            申请时间,当前审批节点,审批人学工号,审批人姓名,审核意见,审批状态,
+            审核时间,流程完结时间,关联业务编号)
+            VALUES
+            (v_审批编号,'班费支出审批拒绝',v_申请人学工号,v_申请人姓名,v_支出事由,v_票据凭证,
+            v_申请日期,'已拒绝',p_审批人学工号,v_审批人姓名,p_审核意见,'已拒绝',
+            NOW(),NOW(),p_支出编号);
+            SELECT '申请已被拒绝' AS 执行结果;
+        ELSE
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '错误：无效的审批结果';
+    END CASE;
+    COMMIT;
+END //
+DELIMITER ;
+执行结果：
+7.3.4 学业管理
+模块
+（
+脚本完成人：杨棋冰
+）
+存储过程 1：
+DELIMITER //
+CREATE PROCEDURE sp_按学期统计班级平均绩点(IN p_semester VARCHAR(50))
+BEGIN
+    SELECT
+        u.所属班级,
+        COUNT(DISTINCT s.学生学工号) AS 学生人数,
+        AVG(s.平均绩点) AS 班级平均绩点
+    FROM 学生学期绩点总表 s
+    JOIN 用户账号与权限信息表 u ON s.学生学工号 = u.学工号
+    WHERE s.学期 = p_semester
+    GROUP BY u.所属班级;
+END //
+DELIMITER 
+执行结果：
+存储过程 2：
+DELIMITER //
+CREATE PROCEDURE sp_自动计算学生绩点与挂科数(IN p_student_id VARCHAR(50), IN p_semester VARCHAR(50))
+BEGIN
+    DECLARE v_avg_gpa DECIMAL(4,2);
+    DECLARE v_fail_count INT;
+    SELECT AVG(绩点) INTO v_avg_gpa
+    FROM 学业成绩明细表
+    WHERE 学生学工号 = p_student_id AND 学期 = p_semester AND 成绩状态 = '正常';
+    SELECT COUNT(*) INTO v_fail_count
+    FROM 学业成绩明细表
+    WHERE 学生学工号 = p_student_id AND 学期 = p_semester AND 总评成绩 < 60;
+    INSERT INTO 学生学期绩点总表(记录编号,学生学工号,学期,平均绩点,挂科科目数,挂科标记,班级排名)
+    VALUES(UUID(), p_student_id, p_semester, v_avg_gpa, v_fail_count, IF(v_fail_count>0,'有挂科','无挂科'), NULL)
+    ON DUPLICATE KEY UPDATE
+        平均绩点 = v_avg_gpa,
+        挂科科目数 = v_fail_count,
+        挂科标记 = IF(v_fail_count>0,'有挂科','无挂科');
+END //
+DELIMITER ;
+执行结果：
+7.3.5 纪律管理模块（
+脚本完成人：
+梅伊宁
+）
+存储过程 1：
+DELIMITER //
+CREATE PROCEDURE sp_统计学生个人学期出勤率(
+    IN p_student_id VARCHAR(50),
+    IN p_semester VARCHAR(20)
+)
+BEGIN
+    DECLARE v_total INT DEFAULT 0;
+    DECLARE v_normal INT DEFAULT 0;
+DECLARE v_rate DECIMAL(5,2) DEFAULT 0.00;
+    SELECT 
+        SUM(CASE WHEN 考勤状态 = '正常出勤' THEN 1 ELSE 0 END),
+        COUNT(*)
+    INTO v_normal, v_total
+    FROM 纪律与考勤档案表 d
+    WHERE d.学生学工号 = p_student_id
+      AND d.记录类型 = '考勤'
+      AND YEAR(d.记录时间) = SUBSTRING(p_semester, 1, 4); 
+    
+    IF v_total > 0 THEN
+        SET v_rate = (v_normal * 100.0) / v_total;
+    END IF;
+    
+    SELECT p_student_id AS 学生学工号, v_total AS 总考勤次数, v_normal AS 正常出勤次数, ROUND(v_rate,2) AS 出勤率百分比;
+END //
+DELIMITER ;
+执行结果：
+存储过程 2：
+DELIMITER //
+CREATE PROCEDURE sp_生成班级纪律处分统计报表(
+    IN p_class_name VARCHAR(100)
+)
+BEGIN
+    SELECT 
+        d.处分类型,
+        COUNT(DISTINCT d.学生学工号) AS 涉及人数,
+        ROUND(COUNT(DISTINCT d.学生学工号) * 100.0 / (SELECT COUNT(*) FROM 用户账号与权限信息表 WHERE 所属班级 = p_class_name), 2) AS 占比百分比
+    FROM 纪律与考勤档案表 d
+    JOIN 用户账号与权限信息表 u ON d.学生学工号 = u.学工号
+    WHERE d.记录类型 = '处分'
+      AND d.处分类型 IS NOT NULL
+      AND u.所属班级 = p_class_name
+    GROUP BY d.处分类型
+    ORDER BY 涉及人数 DESC;
+END //
+DELIMITER ;
+执行结果：
+7.3.6 综合评优与活动管理模块（
+脚本完成人：葛言诚
+）
+存储过程 1：
+DELIMITER //
+CREATE PROCEDURE sp_统计获奖人数(IN p_项目编号 VARCHAR(50))
+BEGIN
+    SELECT
+        ep.项目名称,
+        ea.获奖等级,
+        COUNT(DISTINCT ea.申请人学号) AS 获奖人数
+    FROM 评优项目表 ep
+    LEFT JOIN 评优申请表 ea ON ep.项目编号 = ea.评优项目编号
+    WHERE ep.项目编号 = p_项目编号 AND ea.获奖等级 IS NOT NULL
+    GROUP BY ep.项目名称,ea.获奖等级;
+END //
+DELIMITER ;
+执行结果：
+存储过程 2：
+DELIMITER //
+CREATE PROCEDURE sp_活动自动归档(IN p_活动编号 VARCHAR(50), IN p_归档人 VARCHAR(50), IN p_总结 TEXT)
+BEGIN
+    INSERT INTO 活动档案表(档案编号,活动编号,总结内容,归档人学号)
+    VALUES(UUID(),p_活动编号,p_总结,p_归档人);
+END //
+DELIMITER ;
+执行结果：
+7.4触发器的创建（
+要求每个触发器有执行结果截图
+）
+[此部分写出创建触发器的SQL脚本及具体演示实例，要求
+每个成员
+至少创建2个触发器，
+具体触发器功能根据课程需求进行选择，不同成员之间不能出现相同的脚本
+；
+此部分需要备注脚本完成人的学号姓名
+]
+7.4.1
+ 用户与权限管理
+模块
+（脚本完成人：王挚）
+触发器1：验证是否自动生成了用户注册的操作日志
+DELIMITER //
+CREATE TRIGGER trg_after_user_insert
+AFTER INSERT ON 用户账号与权限信息表
+FOR EACH ROW
+BEGIN
+    INSERT INTO 系统全局操作日志表 (
+        操作编号, 操作人学工号, 操作模块, 操作类型, 操作内容, 操作时间, 操作结果
+    ) VALUES (
+        REPLACE(UUID(), '-', ''), -- 自动生成唯一操作编号
+        NEW.学工号, 
+        '用户管理', 
+        '系统自动注册', 
+        CONCAT('新用户录入：', NEW.姓名, ' (', NEW.学工号, ')'), 
+        NOW(), 
+        '成功'
+    );
+END //
+DELIMITER ;
+执行结果：
+7.4.2 
+日常任务与审批管理模块
+（
+脚本完成人：王挚
+）
+触发器1：防止已验收通过的任务被恶意篡改
+DELIMITER //
+CREATE TRIGGER trg_before_task_update
+BEFORE UPDATE ON 日常任务表
+FOR EACH ROW
+BEGIN
+    IF OLD.验收状态 = '验收通过' AND NEW.验收状态 != '验收通过' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '操作拒绝：已验收通过的任务不允许退回或修改状态';
+    END IF;
+END //
+DELIMITER ;
+执行结果：
+7.4.3 
+班费收支管理
+模块
+（
+脚本完成人：陈柔伊
+）
+触发器1：
+DELIMITER //
+CREATE TRIGGER trg_更新班费收入总金额
+AFTER UPDATE ON 学生缴费明细表
+FOR EACH ROW
+BEGIN
+    IF NEW.缴费状态 = '已缴费' AND OLD.缴费状态 != '已缴费' THEN
+        UPDATE 班费收入记录表
+        SET 收入金额 = (
+            SELECT SUM(缴费金额) 
+            FROM 学生缴费明细表 
+            WHERE 收入编号 = NEW.收入编号 AND 缴费状态 = '已缴费'
+        )
+        WHERE 收入编号 = NEW.收入编号;
+    END IF;
+END //
+DELIMITER ;
+执行结果：
+触发器2：
+DELIMITER //
+CREATE TRIGGER trg_支出申请状态变更日志
+AFTER UPDATE ON 班费支出申请表
+FOR EACH ROW
+BEGIN
+    IF OLD.审批状态 != NEW.审批状态 THEN
+        INSERT INTO 系统全局操作日志表(
+            操作编号, 操作人学工号, 操作模块, 操作类型, 
+            操作内容, 操作结果, 关联业务编号
+        ) VALUES (
+            CONCAT('LOG_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s'), '_', LPAD(FLOOR(RAND()*1000), 3, '0')),
+            IF(NEW.初审人学工号 IS NOT NULL, NEW.初审人学工号, NEW.终审人学工号),
+            '班费支出管理',
+            '审批状态变更',
+            CONCAT('支出申请', NEW.支出编号, '状态从"', OLD.审批状态, '"变更为"', NEW.审批状态, '"'),
+            '成功',
+            NEW.支出编号
+        );
+    END IF;
+END //
+DELIMITER ;
+执行结果：
+7.4.4 学业管理
+模块
+（
+脚本完成人：杨棋冰
+）
+触发器 1：成绩插入后自动重算绩点
+DELIMITER //
+CREATE TRIGGER trig_after_score_insert
+AFTER INSERT ON 学业成绩明细表
+FOR EACH ROW
+BEGIN
+    CALL sp_calc_student_gpa(NEW.学生学工号, NEW.学期);
+END //
+DELIMITER ;
+执行结果：
+触发器 2：成绩修改前校验分数合法性
+DELIMITER //
+CREATE TRIGGER trig_before_score_update
+BEFORE UPDATE ON 学业成绩明细表
+FOR EACH ROW
+BEGIN
+    IF NEW.总评成绩 < 0 OR NEW.总评成绩 > 100 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = '总评成绩必须在0-100之间';
+    END IF;
+END //
+DELIMITER ;
+执行结果:
+注：执行结果第66条显示报错，因为插入的总评成绩超出范围
+7.4.5 纪律管理模块（
+脚本完成人：
+梅伊宁
+）
+触发器 1：插入考勤记录时自动校验请假状态
+DELIMITER //
+CREATE TRIGGER trig_attendance_check_leave
+BEFORE INSERT ON 纪律与考勤档案表
+FOR EACH ROW
+BEGIN
+    DECLARE v_leave_exists INT;
+    IF NEW.记录类型 = '考勤' THEN
+        -- 检查是否存在有效请假
+        IF NEW.请假审批编号 IS NOT NULL THEN
+            SELECT COUNT(*) INTO v_leave_exists
+            FROM 审批流程总表
+            WHERE 审批编号 = NEW.请假审批编号 AND 审批状态 = '已通过';
+            IF v_leave_exists > 0 THEN
+                SET NEW.考勤状态 = '请假';
+            END IF;
+        END IF;
+    END IF;
+END //
+DELIMITER ;
+执行结果:
+触发器 2：记录处分操作日志（写入系统全局操作日志表）
+DELIMITER //
+CREATE TRIGGER trig_discipline_audit_log
+AFTER INSERT ON 纪律与考勤档案表
+FOR EACH ROW
+BEGIN
+    IF NEW.记录类型 = '处分' THEN
+        INSERT INTO 系统全局操作日志表 (操作编号, 操作人学工号, 操作模块, 操作类型, 操作内容, 操作IP, 操作时间, 操作结果, 关联业务编号)
+        VALUES (
+            CONCAT('LOG', UNIX_TIMESTAMP(), FLOOR(RAND()*10000)),
+            NEW.记录人学工号,
+            '纪律管理模块',
+            '处分录入',
+            CONCAT('学生 ', NEW.学生学工号, ' 被记录处分类型：', IFNULL(NEW.处分类型, '无'), '，记录编号：', NEW.记录编号),
+            '127.0.0.1',
+            NOW(),
+            '成功',
+            NEW.记录编号
+        );
+    END IF;
+END //
+DELIMITER ;
+执行结果:
+7.4.6 综合评优与活动管理模块（
+脚本完成人：葛言诚
+）
+触发器 1：获奖自动修改公示状态
+-- 功能：更新获奖等级时，自动将公示状态改为“待公示”
+DELIMITER //
+CREATE TRIGGER trig_获奖自动改公示状态
+BEFORE UPDATE ON 评优申请表
+FOR EACH ROW
+BEGIN
+    IF NEW.获奖等级 IS NOT NULL AND OLD.获奖等级 IS NULL THEN
+        SET NEW.公示状态 = '待公示';
+    END IF;
+END //
+DELIMITER ;
+执行结果：
+触发器 2：新增报名自动填充时间
+-- 功能：插入活动报名时，自动填充当前报名时间
+DELIMITER //
+CREATE TRIGGER trig_报名自动填时间
+BEFORE INSERT ON 活动报名表
+FOR EACH ROW
+BEGIN
+    SET NEW.报名时间 = NOW();
+END //
+DELIMITER ;
+执行结果：
+7.5 函数的创建（
+要求每个函数有执行结果截图
+）
+[此部分写出创建函数的SQL脚本及具体演示实例，要求
+每个成员
+至少创建2个函数，其中
+一个标量函数，一个多语句表值函数，具体函数功能根据课程需求进行选择，不同成员之间不能出现相同的脚本
+；
+此部分需要备注脚本完成人的学号姓名
+]
+7.5.1
+ 用户与权限管理
+模块
+（脚本完成人：王挚）
+函数
+1
+：获取指定辅导员的待审批任务总数
+-- 功能：
+输入辅导员（或任何审批人）的学工号，系统统计并返回该用户当前需要处理但尚未审批的流程总数，返回值为单一的整数（标量）。
+DELIMITER //
+CREATE FUNCTION fn_get_pending_approval_count(p_approver_id VARCHAR(50)) 
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE v_count INT DEFAULT 0;
+    
+    SELECT COUNT(*) INTO v_count
+    FROM 审批流程总表
+    WHERE 审批人学工号 = p_approver_id 
+      AND 审批状态 = '待审批';
+      
+    RETURN v_count;
+END //
+DELIMITER ;
+执行结果：
+7.5.2 
+日常任务与审批管理模块
+（
+脚本完成人：王挚
+）
+函数2：
+生成用户任务完成度报表
+注：由于
+MySQL
+软件问题不支持多语句表值函数，故用多语句存储过程代替
+-- 功能：输入用户的学工号，系统通过多条 SQL 语句分布统计该用户分配到的总任务数和已通过验收的任务数，并通过 IF...ELSE 逻辑控制计算出任务完成率，最终返回一行类似表值的统计结果集。
+DELIMITER //
+CREATE PROCEDURE sp_get_user_task_summary(IN p_user_id VARCHAR(50))
+BEGIN
+    -- 语句 1：声明多个内部变量（多语句特性体现）
+    DECLARE v_total_tasks INT DEFAULT 0;
+    DECLARE v_completed_tasks INT DEFAULT 0;
+    DECLARE v_completion_rate VARCHAR(20);
+    -- 语句 2 & 3：分布查询赋值
+    SELECT COUNT(*) INTO v_total_tasks 
+    FROM 日常任务表 
+    WHERE 负责人学工号 = p_user_id;
+    
+    SELECT COUNT(*) INTO v_completed_tasks 
+    FROM 日常任务表 
+    WHERE 负责人学工号 = p_user_id 
+      AND 验收状态 = '验收通过';
+    -- 语句 4：条件控制与逻辑计算
+    IF v_total_tasks > 0 THEN
+        -- 计算完成率并拼接百分号
+        SET v_completion_rate = CONCAT(ROUND((v_completed_tasks / v_total_tasks) * 100, 2), '%');
+    ELSE
+        SET v_completion_rate = '0.00%';
+    END IF;
+    -- 语句 5：返回类似表值函数的结果集
+    SELECT 
+        p_user_id AS 学工号,
+        v_total_tasks AS 分配任务总数,
+        v_completed_tasks AS 验收通过数量,
+        v_completion_rate AS 任务综合完成率;
+END //
+DELIMITER ;
+执行结果：
+7.5.3 
+班费收支管理
+模块
+（
+脚本完成人：陈柔伊
+）
+函数1：获取某学生欠费总额
+DELIMITER //
+CREATE FUNCTION fn_某学生欠费总额(p_学工号 VARCHAR(50))
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_欠费 DECIMAL(10,2) DEFAULT 0.00;
+    
+    SELECT COALESCE(SUM(r.收入金额 - d.缴费金额), 0.00)
+    INTO v_欠费
+    FROM 学生缴费明细表 d
+    JOIN 班费收入记录表 r ON d.收入编号 = r.收入编号
+    WHERE d.学工号 = p_学工号
+      AND d.缴费状态 = '未缴费';
+      
+    RETURN v_欠费;
+END//
+DELIMITER ;
+执行结果：
+函数2：查询某收入项目未缴费学生明细
+注：由于
+MySQL
+软件问题不支持多语句表值函数，故用多语句存储过程代替
+DELIMITER //
+CREATE PROCEDURE fn_收入项目欠费明细(IN p_收入编号 VARCHAR(50))
+BEGIN
+    SELECT 
+        s.学工号,
+        s.姓名,
+        s.所属班级,
+        d.缴费金额 AS 已缴金额,
+        r.收入金额 AS 应缴金额,
+        (r.收入金额 - d.缴费金额) AS 欠费金额,
+        d.缴费状态,
+        d.缴费时间
+    FROM 学生缴费明细表 d
+    JOIN 用户账号与权限信息表 s ON d.学工号 = s.学工号
+    JOIN 班费收入记录表 r ON d.收入编号 = r.收入编号
+    WHERE d.收入编号 = p_收入编号
+      AND d.缴费状态 = '未缴费'
+    ORDER BY s.学工号;
+END//
+DELIMITER ;
+执行结果：
+7.5.4 学业管理
+模块
+（
+脚本完成人：杨棋冰
+）
+函数 1：根据分数自动计算绩点
+DELIMITER //
+CREATE FUNCTION fn_get_gpa(p_score DECIMAL(5,2))
+RETURNS DECIMAL(3,2)
+DETERMINISTIC
+BEGIN
+    IF p_score >= 90 THEN RETURN 4.0;
+    ELSEIF p_score >= 80 THEN RETURN 3.0;
+    ELSEIF p_score >= 70 THEN RETURN 2.0;
+    ELSEIF p_score >= 60 THEN RETURN 1.0;
+    ELSE RETURN 0.0;
+    END IF;
+END //
+DELIMITER ;
+执行结果：
+函数 2：查询学生某学期是否挂科
+DELIMITER //
+CREATE FUNCTION fn_has_failed(p_student_id VARCHAR(50), p_semester VARCHAR(50))
+RETURNS VARCHAR(10)
+DETERMINISTIC
+BEGIN
+    DECLARE v_flag VARCHAR(10);
+    SELECT 挂科标记 INTO v_flag
+    FROM 学生学期绩点总表
+    WHERE 学生学工号 = p_student_id AND 学期 = p_semester
+    LIMIT 1;
+    RETURN v_flag;
+END //
+DELIMITER ;
+执行结果：
+7.5.5 纪律管理模块（
+脚本完成人：
+梅伊宁
+）
+函数 1：计算学生学期出勤率（百分比）
+DELIMITER //
+CREATE FUNCTION fn_student_attendance_rate(
+    p_student_id VARCHAR(50),
+    p_start_date DATE,
+    p_end_date DATE
+)
+RETURNS DECIMAL(5,2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_total INT DEFAULT 0;
+    DECLARE v_normal INT DEFAULT 0;
+    DECLARE v_rate DECIMAL(5,2) DEFAULT 0.00;
+    
+    SELECT 
+        SUM(CASE WHEN 考勤状态 = '正常出勤' THEN 1 ELSE 0 END),
+        COUNT(*)
+    INTO v_normal, v_total
+    FROM 纪律与考勤档案表
+    WHERE 学生学工号 = p_student_id
+      AND 记录类型 = '考勤'
+      AND 记录时间 BETWEEN p_start_date AND p_end_date;
+    
+    IF v_total > 0 THEN
+        SET v_rate = (v_normal * 100.0) / v_total;
+    END IF;
+    
+    RETURN ROUND(v_rate, 2);
+END //
+DELIMITER ;
+执行结果：
+函数 2：返回某班级考勤异常学生列表
+DELIMITER //
+CREATE FUNCTION fn_class_abnormal_students(
+    p_class_name VARCHAR(100),
+    p_threshold INT
+)
+RETURNS TABLE (
+    学生学工号 VARCHAR(50),
+    学生姓名 VARCHAR(50),
+    异常次数 INT
+)
+DETERMINISTIC
+BEGIN
+    RETURN QUERY
+    SELECT 
+        u.学工号,
+        u.姓名,
+        COUNT(*) AS 异常次数
+    FROM 纪律与考勤档案表 d
+    JOIN 用户账号与权限信息表 u ON d.学生学工号 = u.学工号
+    WHERE u.所属班级 = p_class_name
+      AND d.记录类型 = '考勤'
+      AND d.考勤状态 IN ('迟到', '早退', '旷课')
+    GROUP BY u.学工号, u.姓名
+    HAVING COUNT(*) > p_threshold
+    ORDER BY 异常次数 DESC;
+END //
+DELIMITER ;
+执行结果：
+7.5.6 综合评优与活动管理模块（
+脚本完成人：葛言诚
+）
+函数 1：获取活动报名总人数
+-- 功能：输入活动编号，返回该活动总报名人数
+DELIMITER //
+CREATE FUNCTION fn_取活动报名人数(p_活动编号 VARCHAR(50))
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE 人数 INT DEFAULT 0;
+    SELECT COUNT(报名编号) INTO 人数 FROM 活动报名表 WHERE 活动编号 = p_活动编号;
+    RETURN 人数;
+END //
+DELIMITER ;
+执行结果：
+函数 2：获取评优项目获奖总人数
+-- 功能：输入项目编号，返回该项目已获奖总人数
+DELIMITER //
+CREATE FUNCTION fn_取项目获奖人数(p_项目编号 VARCHAR(50))
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE 获奖数 INT DEFAULT 0;
+    SELECT COUNT(申报编号) INTO 获奖数 FROM 评优申请表 
+    WHERE 评优项目编号 = p_项目编号 AND 获奖等级 IS NOT NULL;
+    RETURN 获奖数;
+END //
+DELIMITER ;
+执行结果：
