@@ -117,6 +117,6 @@ export class ViewsService {
   }
   // 8.
   getApprovalFlows(query: PaginationQueryDto) {
-    return this.getPaginated(this.approvalFlowMasterRepo, query, ['approvalId', 'businessId', 'applicantId', 'module', 'content']);
+    return this.getPaginated(this.approvalFlowMasterRepo, query, ['approvalId', 'businessId', 'applicantId', 'approvalType', 'content']);
   }
 }

@@ -13,34 +13,35 @@
         <!-- Role 1,2,3,4 都能看的公共区 -->
         <el-sub-menu index="1">
           <template #title><el-icon><Monitor /></el-icon><span>公示与查询</span></template>
-          <el-menu-item index="/views/award-details">评优申报公示</el-menu-item>
+          <el-menu-item index="/views/award-details">评优申报详情</el-menu-item>
           <el-menu-item index="/views/expense-details">班费支出明细</el-menu-item>
           <el-menu-item index="/views/class-fee-incomes">班费收入明细</el-menu-item>
+          <el-menu-item index="/views/pending-class-fees">待审批班费支出</el-menu-item>
         </el-sub-menu>
 
         <!-- 全景数据档案室 (分角色) -->
         <el-sub-menu index="4">
           <template #title><el-icon><Histogram /></el-icon><span>全景数据档案室</span></template>
           <!-- 全员可见 (但班主任没有个人作业和缴费，因此屏蔽) -->
-          <el-menu-item v-if="roleCode !== 1" index="/views/student-academics">个人学业大盘</el-menu-item>
-          <el-menu-item v-if="roleCode !== 1" index="/views/student-disciplines">个人纪律档案</el-menu-item>
+          <el-menu-item v-if="roleCode !== 1" index="/views/student-academics">学生个人学业总览</el-menu-item>
+          <el-menu-item v-if="roleCode !== 1" index="/views/student-disciplines">学生个人纪律档案</el-menu-item>
           
-          <el-menu-item index="/views/class-schedule">班级学期课表</el-menu-item>
+          <el-menu-item index="/views/class-schedule">班级学期课表(操作原表)</el-menu-item>
 
           <!-- 班委及以上可见 (Role 1, 2, 3)，进一步做水平权限隔离 -->
           <el-menu-item 
             v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('纪律'))" 
             index="/views/class-attendance-stats"
           >
-            班级考勤大盘
+            班级出勤率周统计
           </el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('文体'))" index="/views/activity-registration-stats">班级活动大盘</el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('财务'))" index="/views/student-payments">班级缴费大盘</el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('学习'))" index="/views/class-grades">班级成绩大盘</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('文体'))" index="/views/activity-registration-stats">活动报名统计</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('财务'))" index="/views/student-payments">学生缴费情况明细</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2 || (roleCode === 3 && jobId.includes('学习'))" index="/views/class-grades">班级成绩与课表明细</el-menu-item>
 
           <!-- 班主任/班长可见 (Role 1, 2) -->
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/pending-approvals">全局待办审批</el-menu-item>
-          <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/user-roles">角色权限清单</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/pending-approvals">待办审批事务</el-menu-item>
+          <el-menu-item v-if="roleCode === 1 || roleCode === 2" index="/views/user-roles">用户与角色详细信息</el-menu-item>
         </el-sub-menu>
 
         <!-- 仅 Role 1, 2 能看的大盘与审批 -->

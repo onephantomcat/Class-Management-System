@@ -21,7 +21,8 @@
       <el-table-column prop="approvalId" label="审批编号" width="180" show-overflow-tooltip />
       <el-table-column prop="businessId" label="关联业务编号" width="150" show-overflow-tooltip />
       <el-table-column prop="applicantId" label="申请人学工号" width="120" />
-      <el-table-column prop="module" label="所属模块" width="100" />
+      <el-table-column prop="applicantName" label="申请人姓名" width="100" />
+      <el-table-column prop="approvalType" label="审批类型" width="100" />
       <el-table-column prop="content" label="申请内容" show-overflow-tooltip min-width="150" />
       <el-table-column prop="currentNode" label="当前审批节点" width="120" />
       <el-table-column prop="reviewerName" label="审批人" width="100">

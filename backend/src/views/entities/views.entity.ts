@@ -193,10 +193,11 @@ export class SystemLogView {
 @ViewEntity({ name: '审批流程总表' })
 export class ApprovalFlowMasterView {
   @ViewColumn({ name: '审批编号' }) approvalId: string;
-  @ViewColumn({ name: '关联业务编号' }) businessId: string;
+  @ViewColumn({ name: '审批类型' }) approvalType: string;
   @ViewColumn({ name: '申请人学工号' }) applicantId: string;
-  @ViewColumn({ name: '所属模块' }) module: string;
+  @ViewColumn({ name: '申请人姓名' }) applicantName: string;
   @ViewColumn({ name: '申请内容' }) content: string;
+  @ViewColumn({ name: '附件材料' }) attachment: string;
   @ViewColumn({ name: '申请时间' }) applyTime: Date;
   @ViewColumn({ name: '当前审批节点' }) currentNode: string;
   @ViewColumn({ name: '审批人学工号' }) reviewerId: string;
@@ -205,4 +206,5 @@ export class ApprovalFlowMasterView {
   @ViewColumn({ name: '审批状态' }) status: string;
   @ViewColumn({ name: '审核时间' }) reviewTime: Date;
   @ViewColumn({ name: '流程完结时间' }) finishTime: Date;
+  @ViewColumn({ name: '关联业务编号' }) businessId: string;
 }

@@ -26,7 +26,7 @@ const routes = [
       {
         path: 'views/award-details',
         component: () => import('@/views/AwardApplicationView.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '评优申报公示' }
+        meta: { roles: [1, 2, 3, 4], title: '评优申报详情' }
       },
       {
         path: 'views/expense-details',
@@ -39,49 +39,54 @@ const routes = [
         meta: { roles: [1, 2, 3, 4], title: '班费收入明细' }
       },
       {
+        path: 'views/pending-class-fees',
+        component: () => import('@/views/PendingClassFeeView.vue'),
+        meta: { roles: [1, 2, 3, 4], title: '待审批班费支出' }
+      },
+      {
         path: 'views/student-payments',
         component: () => import('@/views/StudentPaymentView.vue'),
-        meta: { roles: [1, 2, 3], requiredJob: '财务', title: '班级缴费大盘' }
+        meta: { roles: [1, 2, 3], requiredJob: '财务', title: '学生缴费情况明细' }
       },
       {
         path: 'views/student-academics',
         component: () => import('@/views/StudentAcademicOverview.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '个人学业大盘' }
+        meta: { roles: [1, 2, 3, 4], title: '学生个人学业总览' }
       },
       {
         path: 'views/student-disciplines',
         component: () => import('@/views/StudentDisciplineView.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '个人纪律档案' }
+        meta: { roles: [1, 2, 3, 4], title: '学生个人纪律档案' }
       },
       {
         path: 'views/class-attendance-stats',
         component: () => import('@/views/ClassAttendanceStatsView.vue'),
-        meta: { roles: [1, 2, 3], requiredJob: '纪律', title: '班级考勤大盘' }
+        meta: { roles: [1, 2, 3], requiredJob: '纪律', title: '班级出勤率周统计' }
       },
       {
         path: 'views/class-schedule',
         component: () => import('@/views/ClassScheduleView.vue'),
-        meta: { roles: [1, 2, 3, 4], title: '班级学期课表' }
+        meta: { roles: [1, 2, 3, 4], title: '班级学期课表(操作原表)' }
       },
       {
         path: 'views/activity-registration-stats',
         component: () => import('@/views/ActivityRegistrationStatsView.vue'),
-        meta: { roles: [1, 2, 3], title: '班级活动大盘' }
+        meta: { roles: [1, 2, 3], title: '活动报名统计' }
       },
       {
         path: 'views/class-grades',
         component: () => import('@/views/ClassGradesView.vue'),
-        meta: { roles: [1, 2, 3], requiredJob: '学习', title: '班级成绩大盘' }
+        meta: { roles: [1, 2, 3], requiredJob: '学习', title: '班级成绩与课表明细' }
       },
       {
         path: 'views/pending-approvals',
         component: () => import('@/views/PendingApprovalView.vue'),
-        meta: { roles: [1, 2], title: '全局待办审批' }
+        meta: { roles: [1, 2], title: '待办审批事务' }
       },
       {
         path: 'views/user-roles',
         component: () => import('@/views/UserRolesView.vue'),
-        meta: { roles: [1, 2], title: '角色权限清单' }
+        meta: { roles: [1, 2], title: '用户与角色详细信息' }
       },
 
       // ========================
